@@ -300,8 +300,8 @@ function setBase(rows){
 /* ---------- servidor ---------- */
 async function api(action, payload={}){
   if(!URL_) return {ok:true, local:true};
-  const res = await fetch(URL_, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, pin:PIN, ...payload})});
-  const j = await res.json();
+  let res; try{ res = await fetch(URL_, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, pin:PIN, ...payload})}); }catch(e){ throw new Error('No se pudo contactar al Apps Script. Revisa la URL (/exec) y que el acceso sea "Cualquier persona".'); }
+  let j; try{ j = await res.json(); }catch(e){ throw new Error('La URL no respondió con datos. Revisa que sea la de la implementación (/exec) y que el acceso sea "Cualquier persona".'); }
   if(!j.ok) throw new Error(j.error||'Error del servidor');
   return j;
 }
@@ -625,13 +625,14 @@ function askDelete(id){
 function openConn(){
   modal(`<h2>Conexión con Google Sheet</h2><div class="msub">Pega la URL de la aplicación web de Apps Script (termina en <b>/exec</b>).</div>
    <div class="mbody"><div class="fld full"><label>URL de Apps Script</label><input id="cU" value="${esc(URL_)}" placeholder="https://script.google.com/macros/s/…/exec"><small>Se guarda en este navegador. Para que todos los que abran el tablero vean el Sheet, pégala también en SCRIPT_URL dentro del archivo HTML.</small></div>
+   <div class="fld full"><label>Contraseña del Apps Script (PIN)</label><input type="password" id="cP" placeholder="La que pusiste en Code.gs"></div>
    <div class="fld full"><label>Subir unidades actuales al Sheet</label><button class="b" id="cUp" style="align-self:flex-start">⬆ Subir ${BASE.length} unidades (agrega o actualiza por ID)</button><small>Úsalo la primera vez para llenar el Sheet con los datos de este tablero.</small></div>
    <div class="err" id="mErr"></div></div>
    <div class="mfoot"><span></span><div><button class="b" onclick="closeM()">Cerrar</button><button class="b pri" id="mGo">Guardar y reconectar</button></div></div>`);
-  $('mGo').onclick=async()=>{URL_=$('cU').value.trim();try{localStorage.setItem('prev_ste_url',URL_);}catch(e){}
+  $('mGo').onclick=async()=>{URL_=$('cU').value.trim(); if($('cP').value) PIN=$('cP').value;try{localStorage.setItem('prev_ste_url',URL_);}catch(e){}
     if(URL_){busy('mGo',true);try{await api('auth');}catch(e){busy('mGo',false);$('mErr').textContent='No se pudo validar: '+e.message;return;}}
     closeM(); await init();};
-  $('cUp').onclick=async()=>{const u=$('cU').value.trim(); if(!u){$('mErr').textContent='Primero pega la URL.';return;} URL_=u;
+  $('cUp').onclick=async()=>{const u=$('cU').value.trim(); if(!u){$('mErr').textContent='Primero pega la URL.';return;} URL_=u; if($('cP').value) PIN=$('cP').value;
     try{localStorage.setItem('prev_ste_url',URL_);}catch(e){}
     busy('cUp',true);try{await bulk(BASE,'Carga inicial'); closeM(); await init(); toast('Unidades subidas al Sheet');}catch(e){busy('cUp',false);$('mErr').textContent=e.message;}};
 }
