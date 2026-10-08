@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preventivos Stellantis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f3f5f9;--card:#ffffff;--ink:#14213d;--ink2:#4a5672;--muted:#8a93a8;--line:#e3e7ef;--line2:#eef1f6;
+  --nav:#0f1c3f;--accent:#2457d6;
+  --s-inm:#3b4cca;--s-sem:#2f80ed;--s-q15:#17a2b8;--s-m30:#7cb342;--s-ok:#1e9e62;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:14px}
+header{background:var(--nav);color:#fff;padding:18px 24px 0}
+.hrow{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.3px}
+.sub{color:#aeb9d6;font-size:12.5px;margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.conn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.1)}
+.conn i{width:7px;height:7px;border-radius:50%;background:#9aa3b5}
+.conn.on i{background:#4ade80}.conn.off i{background:#fbbf24}
+.hbtn{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:8px;padding:8px 12px;font:600 12.5px Inter;cursor:pointer}
+.btn:hover{background:rgba(255,255,255,.2)}
+.btn.edit-on{background:#fbbf24;color:#14213d;border-color:#fbbf24}
+.b{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:7px 12px;font:600 12.5px Inter;cursor:pointer}
+.b:hover{background:#f0f3f9}
+.b.pri{background:var(--accent);border-color:var(--accent);color:#fff}.b.pri:hover{filter:brightness(1.08)}
+.b.ok{background:#1e9e62;border-color:#1e9e62;color:#fff}
+.b.del{color:#b4232f;border-color:#f1c4c8}.b.del:hover{background:#fdf0f1}
+.b.sm{padding:3px 8px;font-size:11.5px;border-radius:6px}
+.edit-only{display:none!important}
+body.editing .edit-only{display:inline-flex!important}
+body.editing th.edit-only,body.editing td.edit-only{display:table-cell!important}
+nav.tabs{display:flex;gap:4px;margin-top:16px;overflow-x:auto}
+nav.tabs button{background:none;border:0;color:#aeb9d6;font:600 13px Inter;padding:10px 14px;border-radius:8px 8px 0 0;cursor:pointer;white-space:nowrap}
+nav.tabs button.on{background:var(--bg);color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;background:var(--card);border-bottom:1px solid var(--line);padding:12px 24px;position:sticky;top:0;z-index:30}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl label,.fld label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ctl select,.ctl input,.fld input,.fld select,.fld textarea{font:500 13px Inter;border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:#fff;color:var(--ink);min-width:0}
+.ctl input[type=number]{width:70px}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding-bottom:6px}
+.banner{display:none;background:#fff7e0;border-bottom:1px solid #f3dd9c;color:#7a5300;font-size:12.5px;padding:8px 24px}
+body.editing .banner.local{display:block}
+main{padding:20px 24px 40px;max-width:1600px;margin:0 auto}
+.pane{display:none}.pane.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;cursor:pointer;transition:transform .1s}
+.kpi:hover{transform:translateY(-1px)}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--accent))}
+.kpi .l{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.kpi .v{font-size:30px;font-weight:800;margin-top:4px;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12px;color:var(--ink2);margin-top:2px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1.4fr 1fr}.g2e{grid-template-columns:1fr 1fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-width:0}
+.card h3{margin:0 0 2px;font-size:14.5px;font-weight:700}
+.card .cap{font-size:12px;color:var(--muted);margin-bottom:12px}
+.ch{position:relative;height:280px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;padding:8px 8px;border-bottom:1px solid var(--line);background:#fafbfd;position:sticky;top:0;cursor:pointer;white-space:nowrap;user-select:none;z-index:1}
+td{padding:7px 8px;border-bottom:1px solid var(--line2);white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:hover td{background:#f7f9fd}
+.num{text-align:right}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
+.tblwrap{max-height:640px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toolbar input[type=text],.toolbar input:not([type]),.toolbar select{font:500 13px Inter;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:260px;max-width:100%;background:#fff}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.note{font-size:12.5px;color:var(--ink2);background:#eef3ff;border:1px solid #d6e1ff;border-radius:10px;padding:10px 14px;margin-bottom:16px;line-height:1.5}
+.acts{display:flex;gap:4px}
+/* Gantt */
+.gwrap{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:720px;background:#fff;position:relative}
+.gt{display:grid;position:relative}
+.gleft{position:sticky;left:0;z-index:5;background:#fff;border-right:1px solid var(--line)}
+.ghead{position:sticky;top:0;z-index:6;background:#fafbfd;border-bottom:1px solid var(--line);height:46px}
+.gcorner{position:sticky;left:0;top:0;z-index:8;background:#fafbfd;border-bottom:1px solid var(--line);font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:6px 10px;display:flex;align-items:flex-end;height:46px}
+.gmonths{display:flex;height:24px}.gdays{display:flex;height:22px}
+.gm{font-size:11px;font-weight:700;padding:5px 6px;border-left:1px solid var(--line);white-space:nowrap;overflow:hidden;color:var(--ink2);flex:none}
+.gd{font-size:10px;text-align:center;color:var(--muted);border-left:1px solid var(--line2);padding:3px 0;flex:none}
+.gd.we{background:#f1f3f8}.gd.today{background:var(--accent);color:#fff;font-weight:700}
+.grow{height:26px;border-bottom:1px solid var(--line2);position:relative}
+.glabel{height:26px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:8px;padding:0 10px;font-size:12px;white-space:nowrap}
+.glabel b{font-family:'JetBrains Mono',monospace;font-size:12px;width:48px}
+.glabel small{color:var(--muted);font-size:10.5px;overflow:hidden;text-overflow:ellipsis}
+.gsec{height:24px;background:#eef1f7;border-bottom:1px solid var(--line);font-size:11px;font-weight:700;color:var(--ink2);display:flex;align-items:center;padding:0 10px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;overflow:hidden}
+.gsecR{height:24px;background:#eef1f7;border-bottom:1px solid var(--line)}
+.gbg{position:absolute;top:0;bottom:0;pointer-events:none}
+.gbg.we{background:rgba(20,33,61,.035)}
+.gtoday{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);z-index:3;pointer-events:none}
+.gcyc{position:absolute;top:11px;height:4px;border-radius:2px;background:var(--c);opacity:.28}
+.gwin{position:absolute;top:6px;height:14px;border-radius:4px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 30%,transparent) 0 4px,transparent 4px 8px);border:1px dashed var(--c)}
+.gslot{position:absolute;top:4px;height:18px;border-radius:4px;background:var(--c);z-index:2;box-shadow:0 1px 2px rgba(0,0,0,.2);cursor:pointer}
+.gdia{position:absolute;top:8px;width:10px;height:10px;transform:rotate(45deg);background:#fff;border:2px solid var(--c);z-index:2}
+.tip{position:fixed;z-index:100;background:#0f1c3f;color:#fff;padding:9px 11px;border-radius:8px;font-size:12px;line-height:1.5;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.25);display:none;max-width:280px}
+.tip b{color:#ffd166}
+/* programa diario */
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.day h4{margin:0;padding:10px 14px;font-size:13px;display:flex;justify-content:space-between;background:#fafbfd;border-bottom:1px solid var(--line)}
+.day h4 span{font-weight:600;color:var(--muted)}
+.day ul{list-style:none;margin:0;padding:6px 0}
+.day li{display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:12.5px}
+.day li b{font-family:'JetBrains Mono',monospace;width:50px}
+.day li small{color:var(--muted);margin-left:auto}
+.bar{height:6px;background:var(--line2);border-radius:3px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--accent)}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(15,28,63,.45);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.ov.on{display:flex}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal h2{margin:0;font-size:17px;padding:18px 22px 4px}
+.modal .msub{font-size:12.5px;color:var(--muted);padding:0 22px 12px}
+.mbody{padding:6px 22px 8px;display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld textarea{resize:vertical;min-height:60px}
+.fld small{font-size:11px;color:var(--muted)}
+details.int{grid-column:1/-1;border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
+details.int summary{font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer}
+details.int .mbody{padding:10px 0 4px}
+.mfoot{display:flex;justify-content:space-between;gap:8px;padding:14px 22px 18px;border-top:1px solid var(--line2);margin-top:10px}
+.mfoot div{display:flex;gap:8px}
+.err{color:#b4232f;font-size:12px;grid-column:1/-1;min-height:0}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0f1c3f;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:300;display:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.toast.err{background:#9f1d2a}
+@media (max-width:1000px){.g2,.g2e{grid-template-columns:1fr}main,.controls{padding-left:16px;padding-right:16px}header{padding:16px 16px 0}.mbody{grid-template-columns:1fr}}
+@media print{.controls,nav.tabs,.hbtn,.banner{display:none}.pane{display:block!important;page-break-after:always}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div>
+      <h1>Seguimiento de Preventivos · Stellantis</h1>
+      <div class="sub"><span id="subt">—</span><span class="conn" id="conn"><i></i><span>—</span></span></div>
+    </div>
+    <div class="hbtn">
+      <button class="btn edit-only" onclick="openUnit()">＋ Agregar unidad</button>
+      <button class="btn edit-only" onclick="document.getElementById('file').click()">⬆ Cargar Excel</button>
+      <button class="btn edit-only" onclick="openConn()">⚙ Conexión</button>
+      <button class="btn" onclick="exportCSV()">⬇ Exportar plan</button>
+      <button class="btn" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn" id="bEdit" onclick="toggleEdit()">🔒 Modo edición</button>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-p="resumen" class="on">Resumen</button>
+    <button data-p="gantt">Gantt de atención</button>
+    <button data-p="programa">Programa diario</button>
+    <button data-p="detalle">Detalle por unidad</button>
+    <button data-p="registro">Registro de atención</button>
+  </nav>
+</header>
+<div class="banner local" id="banLocal">Sin conexión a Google Sheet: los cambios se ven en pantalla pero <b>no se guardan</b>. Configura la conexión en ⚙ Conexión.</div>
+
+<div class="controls">
+  <div class="ctl"><label>Planta</label><select id="fPlanta"></select></div>
+  <div class="ctl"><label>Estatus</label><select id="fEst"></select></div>
+  <div class="ctl"><label>Inicio del plan</label><input type="date" id="hoy"></div>
+  <div class="ctl"><label>Capacidad / día</label><input type="number" id="cap" min="1" max="50" value="6"></div>
+  <div class="ctl"><label>Anticipación (días)</label><input type="number" id="lead" min="0" max="30" value="5"></div>
+  <div class="ctl"><label>Horizonte Gantt</label>
+    <select id="hor"><option value="30">30 días</option><option value="60" selected>60 días</option><option value="90">90 días</option><option value="150">150 días</option></select></div>
+  <label class="chk"><input type="checkbox" id="sab" checked> Taller abre sábado</label>
+</div>
+
+<main>
+<section class="pane on" id="p-resumen">
+  <div class="note">La fecha del siguiente preventivo de cada unidad se proyecta con su historial de servicio (fecha del penúltimo y último preventivo) y su uso real desde el último servicio. Con esa fecha se arma el plan de atención respetando la capacidad diaria del taller.</div>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid g2">
+    <div class="card"><h3>Preventivos proyectados por semana</h3><div class="cap">Unidades cuyo siguiente preventivo cae en cada semana, por planta</div><div class="ch"><canvas id="cWeek"></canvas></div></div>
+    <div class="card"><h3>Estatus de la flota</h3><div class="cap">Tiempo al siguiente preventivo, a partir del inicio del plan</div><div class="ch"><canvas id="cEst"></canvas></div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Carga diaria del taller</h3><div class="cap">Unidades programadas por día contra la capacidad configurada (próximos 45 días)</div><div class="ch"><canvas id="cLoad"></canvas></div></div>
+    <div class="card"><h3>Resumen por planta</h3><div class="cap">Situación de cada planta</div><div id="tPlanta"></div></div>
+  </div>
+  <div class="grid g2e" style="margin-top:16px">
+    <div class="card"><h3>Próximas atenciones</h3><div class="cap">Las 15 unidades con prioridad más alta en el plan</div><div id="tTop"></div></div>
+    <div class="card"><h3>Unidades programadas por semana</h3><div class="cap">Plan de atención sugerido, por planta</div><div class="ch"><canvas id="cPlan"></canvas></div></div>
+  </div>
+</section>
+
+<section class="pane" id="p-gantt">
+  <div class="toolbar"><div class="legend" id="gleg"></div></div>
+  <div class="toolbar">
+    <label class="chk" style="padding:0"><input type="radio" name="gg" value="fecha" checked> Agrupar por semana</label>
+    <label class="chk" style="padding:0"><input type="radio" name="gg" value="planta"> Agrupar por planta</label>
+    <input id="gq" placeholder="Buscar unidad…" style="width:180px">
+    <span id="gcount" style="font-size:12px;color:var(--muted)"></span>
+  </div>
+  <div class="gwrap" id="gwrap"></div>
+</section>
+
+<section class="pane" id="p-programa">
+  <div class="note">Plan sugerido de atención: las unidades se acomodan por prioridad (fecha proyectada más cercana primero) en el primer día hábil disponible a partir de <b>fecha proyectada − anticipación</b>, sin pasar la capacidad diaria del taller.<span class="edit-only" style="display:inline"> Usa ✓ para registrar una unidad como atendida.</span></div>
+  <div class="days" id="days"></div>
+</section>
+
+<section class="pane" id="p-detalle">
+  <div class="toolbar"><input id="q" placeholder="Buscar ID, planta, estatus…"><span id="qcount" style="font-size:12px;color:var(--muted)"></span>
+    <button class="b pri edit-only" style="margin-left:auto" onclick="openUnit()">＋ Agregar unidad</button></div>
+  <div class="tblwrap"><table id="tDet"></table></div>
+</section>
+
+<section class="pane" id="p-registro">
+  <div class="kpis" id="rk"></div>
+  <div class="toolbar"><input id="rq" placeholder="Buscar unidad, planta, observación…">
+    <select id="racc" class="edit-only" style="width:200px"><option value="ATENCION">Solo atenciones</option><option value="">Todos los movimientos</option></select>
+    <span id="rcount" style="font-size:12px;color:var(--muted)"></span></div>
+  <div class="tblwrap"><table id="tReg"></table></div>
+</section>
+</main>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== CONFIGURACIÓN ===================== */
+// Pega aquí la URL /exec de tu Apps Script (o configúrala desde ⚙ Conexión en modo edición)
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTTezxyPiOLiZ-0qF6lt6p-U7SBu7xqzJOhVyYpIJ4fGqMs-dQtFINGLUtr1gML2na/exec';
+const LOCAL_PIN = 'LIPU77';   // solo se usa si no hay conexión al Sheet
+/* ========================================================= */
+
+const SEED = [{"ID":4630,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-08","FECHA ULTIMO PREVENTIVO":"2026-08-10","KMS. U.P.":350745,"KMS. PROX. P.":370745,"KMS. REC.":11808,"KMS. FAL.":8192,"DIAS U.P.":56,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":4640,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-07","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":431403,"KMS. PROX. P.":451403,"KMS. REC.":3522,"KMS. FAL.":16478,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4647,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-25","FECHA ULTIMO PREVENTIVO":"2026-09-09","KMS. U.P.":539331,"KMS. PROX. P.":559331,"KMS. REC.":7549,"KMS. FAL.":12451,"DIAS U.P.":26,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4648,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-09-08","KMS. U.P.":403497,"KMS. PROX. P.":423497,"KMS. REC.":5515,"KMS. FAL.":14485,"DIAS U.P.":27,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4659,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-30","FECHA ULTIMO PREVENTIVO":"2026-08-17","KMS. U.P.":366932,"KMS. PROX. P.":386932,"KMS. REC.":11498,"KMS. FAL.":8502,"DIAS U.P.":49,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":4662,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-01","FECHA ULTIMO PREVENTIVO":"2026-09-01","KMS. U.P.":308107,"KMS. PROX. P.":328107,"KMS. REC.":4853,"KMS. FAL.":15147,"DIAS U.P.":34,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4663,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-07-21","KMS. U.P.":388083,"KMS. PROX. P.":408083,"KMS. REC.":14293,"KMS. FAL.":5707,"DIAS U.P.":76,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4672,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-10","FECHA ULTIMO PREVENTIVO":"2026-06-10","KMS. U.P.":400000,"KMS. PROX. P.":420000,"KMS. REC.":23575,"KMS. FAL.":-3575,"DIAS U.P.":117,"MESES U.P.":4,"PLANTA":"CAMIONES"},{"ID":4685,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-15","FECHA ULTIMO PREVENTIVO":"2026-08-06","KMS. U.P.":303596,"KMS. PROX. P.":323596,"KMS. REC.":8346,"KMS. FAL.":11654,"DIAS U.P.":60,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":4692,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-18","FECHA ULTIMO PREVENTIVO":"2026-06-03","KMS. U.P.":421336,"KMS. PROX. P.":441336,"KMS. REC.":21575,"KMS. FAL.":-1575,"DIAS U.P.":124,"MESES U.P.":4,"PLANTA":"CAMIONES"},{"ID":4702,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-02","FECHA ULTIMO PREVENTIVO":"2026-07-02","KMS. U.P.":467720,"KMS. PROX. P.":487720,"KMS. REC.":16607,"KMS. FAL.":3393,"DIAS U.P.":95,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4704,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-09","FECHA ULTIMO PREVENTIVO":"2026-07-09","KMS. U.P.":329261,"KMS. PROX. P.":349261,"KMS. REC.":13145,"KMS. FAL.":6855,"DIAS U.P.":88,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4721,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-18","FECHA ULTIMO PREVENTIVO":"2026-05-18","KMS. U.P.":3798387,"KMS. PROX. P.":3818387,"KMS. REC.":23318,"KMS. FAL.":-3318,"DIAS U.P.":140,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":4722,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-27","FECHA ULTIMO PREVENTIVO":"2026-09-17","KMS. U.P.":469668,"KMS. PROX. P.":489668,"KMS. REC.":2166,"KMS. FAL.":17834,"DIAS U.P.":18,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4737,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-22","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":393072,"KMS. PROX. P.":413072,"KMS. REC.":5199,"KMS. FAL.":14801,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4748,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-07-21","KMS. U.P.":364626,"KMS. PROX. P.":384626,"KMS. REC.":20809,"KMS. FAL.":-809,"DIAS U.P.":76,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4759,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-09","FECHA ULTIMO PREVENTIVO":"2026-07-09","KMS. U.P.":376330,"KMS. PROX. P.":396330,"KMS. REC.":14011,"KMS. FAL.":5989,"DIAS U.P.":88,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4760,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-07","FECHA ULTIMO PREVENTIVO":"2026-07-07","KMS. U.P.":363888,"KMS. PROX. P.":383888,"KMS. REC.":20350,"KMS. FAL.":-350,"DIAS U.P.":90,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4762,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-29","FECHA ULTIMO PREVENTIVO":"2026-08-21","KMS. U.P.":442430,"KMS. PROX. P.":462430,"KMS. REC.":9268,"KMS. FAL.":10732,"DIAS U.P.":45,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":4770,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-24","FECHA ULTIMO PREVENTIVO":"2026-09-02","KMS. U.P.":438571,"KMS. PROX. P.":458571,"KMS. REC.":7984,"KMS. FAL.":12016,"DIAS U.P.":33,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":4801,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-19","FECHA ULTIMO PREVENTIVO":"2026-08-18","KMS. U.P.":367570,"KMS. PROX. P.":387570,"KMS. REC.":831,"KMS. FAL.":19169,"DIAS U.P.":48,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":4803,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-14","FECHA ULTIMO PREVENTIVO":"2026-08-12","KMS. U.P.":244080,"KMS. PROX. P.":264080,"KMS. REC.":9499,"KMS. FAL.":10501,"DIAS U.P.":54,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":4805,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-05","FECHA ULTIMO PREVENTIVO":"2026-07-14","KMS. U.P.":401386,"KMS. PROX. P.":421386,"KMS. REC.":18048,"KMS. FAL.":1952,"DIAS U.P.":83,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4807,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-25","FECHA ULTIMO PREVENTIVO":"2026-06-25","KMS. U.P.":349055,"KMS. PROX. P.":369055,"KMS. REC.":18266,"KMS. FAL.":1734,"DIAS U.P.":102,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":4942,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-06","FECHA ULTIMO PREVENTIVO":"2026-05-06","KMS. U.P.":1396410,"KMS. PROX. P.":1416410,"KMS. REC.":25025,"KMS. FAL.":-5025,"DIAS U.P.":152,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":5388,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-06","FECHA ULTIMO PREVENTIVO":"2026-09-25","KMS. U.P.":570000,"KMS. PROX. P.":590000,"KMS. REC.":0,"KMS. FAL.":20000,"DIAS U.P.":10,"MESES U.P.":0,"PLANTA":"CAMIONES"},{"ID":5690,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-18","FECHA ULTIMO PREVENTIVO":"2026-08-05","KMS. U.P.":298346,"KMS. PROX. P.":318346,"KMS. REC.":10674,"KMS. FAL.":9326,"DIAS U.P.":61,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":5691,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-23","FECHA ULTIMO PREVENTIVO":"2026-09-23","KMS. U.P.":270511,"KMS. PROX. P.":290511,"KMS. REC.":1411,"KMS. FAL.":18589,"DIAS U.P.":12,"MESES U.P.":0,"PLANTA":"CAMIONES"},{"ID":5795,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-15","FECHA ULTIMO PREVENTIVO":"2026-06-15","KMS. U.P.":562455,"KMS. PROX. P.":582455,"KMS. REC.":22334,"KMS. FAL.":-2334,"DIAS U.P.":112,"MESES U.P.":4,"PLANTA":"CAMIONES"},{"ID":5893,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-29","FECHA ULTIMO PREVENTIVO":"2026-05-13","KMS. U.P.":203842,"KMS. PROX. P.":223842,"KMS. REC.":18621,"KMS. FAL.":1379,"DIAS U.P.":145,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":6117,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-01","FECHA ULTIMO PREVENTIVO":"2026-09-08","KMS. U.P.":281537,"KMS. PROX. P.":301537,"KMS. REC.":5306,"KMS. FAL.":14694,"DIAS U.P.":27,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":6322,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-09","FECHA ULTIMO PREVENTIVO":"2026-07-09","KMS. U.P.":218432,"KMS. PROX. P.":238432,"KMS. REC.":18853,"KMS. FAL.":1147,"DIAS U.P.":88,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":6431,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2025-07-11","KMS. U.P.":259978,"KMS. PROX. P.":279978,"KMS. REC.":21619,"KMS. FAL.":-1619,"DIAS U.P.":451,"MESES U.P.":15,"PLANTA":"CAMIONES"},{"ID":6448,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-05-21","KMS. U.P.":462437,"KMS. PROX. P.":482437,"KMS. REC.":20540,"KMS. FAL.":-540,"DIAS U.P.":137,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":6453,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-04","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":234732,"KMS. PROX. P.":254732,"KMS. REC.":2717,"KMS. FAL.":17283,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":6486,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-22","FECHA ULTIMO PREVENTIVO":"2026-05-22","KMS. U.P.":1220540,"KMS. PROX. P.":1240540,"KMS. REC.":20691,"KMS. FAL.":-691,"DIAS U.P.":136,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":6902,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-16","FECHA ULTIMO PREVENTIVO":"2026-07-16","KMS. U.P.":110310,"KMS. PROX. P.":130310,"KMS. REC.":19549,"KMS. FAL.":451,"DIAS U.P.":81,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":7401,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-13","FECHA ULTIMO PREVENTIVO":"2026-05-13","KMS. U.P.":475276,"KMS. PROX. P.":495276,"KMS. REC.":17216,"KMS. FAL.":2784,"DIAS U.P.":145,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":7411,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-04","FECHA ULTIMO PREVENTIVO":"2026-09-08","KMS. U.P.":195119,"KMS. PROX. P.":215119,"KMS. REC.":3640,"KMS. FAL.":16360,"DIAS U.P.":27,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":7412,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-07","FECHA ULTIMO PREVENTIVO":"2026-08-17","KMS. U.P.":248648,"KMS. PROX. P.":268648,"KMS. REC.":20650,"KMS. FAL.":-650,"DIAS U.P.":49,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":7586,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-07","FECHA ULTIMO PREVENTIVO":"2026-09-11","KMS. U.P.":501148,"KMS. PROX. P.":521148,"KMS. REC.":6426,"KMS. FAL.":13574,"DIAS U.P.":24,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":7611,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-18","FECHA ULTIMO PREVENTIVO":"2026-05-18","KMS. U.P.":166403,"KMS. PROX. P.":186403,"KMS. REC.":12633,"KMS. FAL.":7367,"DIAS U.P.":140,"MESES U.P.":5,"PLANTA":"CAMIONES"},{"ID":7952,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-07","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":330169,"KMS. PROX. P.":350169,"KMS. REC.":5103,"KMS. FAL.":14897,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":9630,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-22","FECHA ULTIMO PREVENTIVO":"2026-09-25","KMS. U.P.":72337,"KMS. PROX. P.":92337,"KMS. REC.":1586,"KMS. FAL.":18414,"DIAS U.P.":10,"MESES U.P.":0,"PLANTA":"CAMIONES"},{"ID":9631,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-22","FECHA ULTIMO PREVENTIVO":"2026-10-05","KMS. U.P.":216530,"KMS. PROX. P.":236530,"KMS. REC.":0,"KMS. FAL.":20000,"DIAS U.P.":0,"MESES U.P.":0,"PLANTA":"CAMIONES"},{"ID":9633,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-18","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":248807,"KMS. PROX. P.":268807,"KMS. REC.":1976,"KMS. FAL.":18024,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":12798,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-05","FECHA ULTIMO PREVENTIVO":"2026-07-25","KMS. U.P.":26416,"KMS. PROX. P.":46416,"KMS. REC.":12908,"KMS. FAL.":7092,"DIAS U.P.":72,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":12802,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-08-12","FECHA ULTIMO PREVENTIVO":"2026-08-12","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":14443,"KMS. FAL.":5557,"DIAS U.P.":54,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":12999,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-09","FECHA ULTIMO PREVENTIVO":"2026-07-20","KMS. U.P.":28000,"KMS. PROX. P.":48000,"KMS. REC.":11533,"KMS. FAL.":8467,"DIAS U.P.":77,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":13906,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-09","FECHA ULTIMO PREVENTIVO":"2026-07-25","KMS. U.P.":22162,"KMS. PROX. P.":42162,"KMS. REC.":6403,"KMS. FAL.":13597,"DIAS U.P.":72,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":14214,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-10","FECHA ULTIMO PREVENTIVO":"2026-07-25","KMS. U.P.":21000,"KMS. PROX. P.":41000,"KMS. REC.":13026,"KMS. FAL.":6974,"DIAS U.P.":72,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":14243,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-12","FECHA ULTIMO PREVENTIVO":"2026-07-23","KMS. U.P.":23000,"KMS. PROX. P.":43000,"KMS. REC.":24009,"KMS. FAL.":-4009,"DIAS U.P.":74,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":15186,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-02","FECHA ULTIMO PREVENTIVO":"2026-07-02","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":20509,"KMS. FAL.":-509,"DIAS U.P.":95,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":15210,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-16","FECHA ULTIMO PREVENTIVO":"2026-06-16","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":25131,"KMS. FAL.":-5131,"DIAS U.P.":111,"MESES U.P.":4,"PLANTA":"CAMIONES"},{"ID":15450,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-06","FECHA ULTIMO PREVENTIVO":"2026-07-15","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":26732,"KMS. FAL.":-6732,"DIAS U.P.":82,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":15981,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-27","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":3606,"KMS. FAL.":16394,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":16823,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-25","FECHA ULTIMO PREVENTIVO":"2026-06-25","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":14194,"KMS. FAL.":5806,"DIAS U.P.":102,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":16825,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-08-20","FECHA ULTIMO PREVENTIVO":"2026-08-20","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":15012,"KMS. FAL.":4988,"DIAS U.P.":46,"MESES U.P.":2,"PLANTA":"CAMIONES"},{"ID":16882,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-09-12","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4973,"KMS. FAL.":15027,"DIAS U.P.":23,"MESES U.P.":1,"PLANTA":"CAMIONES"},{"ID":16891,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-02","FECHA ULTIMO PREVENTIVO":"2026-07-15","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":9560,"KMS. FAL.":10440,"DIAS U.P.":82,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":16893,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-30","FECHA ULTIMO PREVENTIVO":"2026-06-30","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":14131,"KMS. FAL.":5869,"DIAS U.P.":97,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":16895,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-14","FECHA ULTIMO PREVENTIVO":"2026-07-21","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":16534,"KMS. FAL.":3466,"DIAS U.P.":76,"MESES U.P.":3,"PLANTA":"CAMIONES"},{"ID":16897,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-10","FECHA ULTIMO PREVENTIVO":"2026-06-10","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":21338,"KMS. FAL.":-1338,"DIAS U.P.":117,"MESES U.P.":4,"PLANTA":"CAMIONES"},{"ID":17471,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":2720,"KMS. FAL.":17280,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"CAMIONES"},{"ID":17472,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":3856,"KMS. FAL.":16144,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"CAMIONES"},{"ID":17473,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":5007,"KMS. FAL.":14993,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"CAMIONES"},{"ID":17474,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":2696,"KMS. FAL.":17304,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"CAMIONES"},{"ID":5890,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-29","FECHA ULTIMO PREVENTIVO":"2026-06-29","KMS. U.P.":329062,"KMS. PROX. P.":349062,"KMS. REC.":18590,"KMS. FAL.":1410,"DIAS U.P.":98,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":7613,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-04","FECHA ULTIMO PREVENTIVO":"2026-09-04","KMS. U.P.":276604,"KMS. PROX. P.":296604,"KMS. REC.":4969,"KMS. FAL.":15031,"DIAS U.P.":31,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":7800,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-05-21","KMS. U.P.":401689,"KMS. PROX. P.":421689,"KMS. REC.":21152,"KMS. FAL.":-1152,"DIAS U.P.":137,"MESES U.P.":5,"PLANTA":"EXTENSION"},{"ID":7847,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2025-11-12","KMS. U.P.":273823,"KMS. PROX. P.":288823,"KMS. REC.":6690,"KMS. FAL.":8310,"DIAS U.P.":327,"MESES U.P.":11,"PLANTA":"EXTENSION"},{"ID":10340,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-19","FECHA ULTIMO PREVENTIVO":"2026-07-08","KMS. U.P.":297218,"KMS. PROX. P.":317218,"KMS. REC.":1104,"KMS. FAL.":18896,"DIAS U.P.":89,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":10345,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-23","FECHA ULTIMO PREVENTIVO":"2026-09-28","KMS. U.P.":315210,"KMS. PROX. P.":335210,"KMS. REC.":1341,"KMS. FAL.":18659,"DIAS U.P.":7,"MESES U.P.":0,"PLANTA":"EXTENSION"},{"ID":11012,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-26","FECHA ULTIMO PREVENTIVO":"2026-05-26","KMS. U.P.":45087,"KMS. PROX. P.":65087,"KMS. REC.":22703,"KMS. FAL.":-2703,"DIAS U.P.":132,"MESES U.P.":4,"PLANTA":"EXTENSION"},{"ID":11013,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-12","FECHA ULTIMO PREVENTIVO":"2026-05-12","KMS. U.P.":170910,"KMS. PROX. P.":190910,"KMS. REC.":23602,"KMS. FAL.":-3602,"DIAS U.P.":146,"MESES U.P.":5,"PLANTA":"EXTENSION"},{"ID":11014,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-09","FECHA ULTIMO PREVENTIVO":"2026-06-09","KMS. U.P.":24470,"KMS. PROX. P.":44470,"KMS. REC.":22443,"KMS. FAL.":-2443,"DIAS U.P.":118,"MESES U.P.":4,"PLANTA":"EXTENSION"},{"ID":11016,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-22","FECHA ULTIMO PREVENTIVO":"2026-06-22","KMS. U.P.":45215,"KMS. PROX. P.":65215,"KMS. REC.":24578,"KMS. FAL.":-4578,"DIAS U.P.":105,"MESES U.P.":4,"PLANTA":"EXTENSION"},{"ID":11167,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-29","FECHA ULTIMO PREVENTIVO":"2026-06-26","KMS. U.P.":216000,"KMS. PROX. P.":236000,"KMS. REC.":15094,"KMS. FAL.":4906,"DIAS U.P.":101,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":11176,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-29","FECHA ULTIMO PREVENTIVO":"2026-09-04","KMS. U.P.":23000,"KMS. PROX. P.":43000,"KMS. REC.":7492,"KMS. FAL.":12508,"DIAS U.P.":31,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":11178,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-20","FECHA ULTIMO PREVENTIVO":"2026-07-20","KMS. U.P.":25512,"KMS. PROX. P.":45512,"KMS. REC.":9796,"KMS. FAL.":10204,"DIAS U.P.":77,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":11179,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-07","FECHA ULTIMO PREVENTIVO":"2026-09-28","KMS. U.P.":45056,"KMS. PROX. P.":65056,"KMS. REC.":694,"KMS. FAL.":19306,"DIAS U.P.":7,"MESES U.P.":0,"PLANTA":"EXTENSION"},{"ID":11180,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-22","FECHA ULTIMO PREVENTIVO":"2026-05-28","KMS. U.P.":119061,"KMS. PROX. P.":139061,"KMS. REC.":20514,"KMS. FAL.":-514,"DIAS U.P.":130,"MESES U.P.":4,"PLANTA":"EXTENSION"},{"ID":11192,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":80575,"KMS. PROX. P.":100575,"KMS. REC.":10763,"KMS. FAL.":9237,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":11200,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-30","FECHA ULTIMO PREVENTIVO":"2026-09-25","KMS. U.P.":619801,"KMS. PROX. P.":639801,"KMS. REC.":1681,"KMS. FAL.":18319,"DIAS U.P.":10,"MESES U.P.":0,"PLANTA":"EXTENSION"},{"ID":11233,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-08","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":25471,"KMS. PROX. P.":45471,"KMS. REC.":5951,"KMS. FAL.":14049,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":11860,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-20","FECHA ULTIMO PREVENTIVO":"2026-09-11","KMS. U.P.":44019,"KMS. PROX. P.":54019,"KMS. REC.":1,"KMS. FAL.":9999,"DIAS U.P.":24,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":12629,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-02","FECHA ULTIMO PREVENTIVO":"2026-06-26","KMS. U.P.":23000,"KMS. PROX. P.":43000,"KMS. REC.":16468,"KMS. FAL.":3532,"DIAS U.P.":101,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":12723,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-29","FECHA ULTIMO PREVENTIVO":"2026-08-21","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":14870,"KMS. FAL.":5130,"DIAS U.P.":45,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":12867,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-07","FECHA ULTIMO PREVENTIVO":"2026-09-04","KMS. U.P.":23000,"KMS. PROX. P.":43000,"KMS. REC.":5786,"KMS. FAL.":14214,"DIAS U.P.":31,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":12949,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-02","FECHA ULTIMO PREVENTIVO":"2026-09-04","KMS. U.P.":21000,"KMS. PROX. P.":41000,"KMS. REC.":7550,"KMS. FAL.":12450,"DIAS U.P.":31,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":13003,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-06-24","KMS. U.P.":35899,"KMS. PROX. P.":55899,"KMS. REC.":21481,"KMS. FAL.":-1481,"DIAS U.P.":103,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":13024,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-23","FECHA ULTIMO PREVENTIVO":"2026-05-29","KMS. U.P.":24646,"KMS. PROX. P.":44646,"KMS. REC.":24374,"KMS. FAL.":-4374,"DIAS U.P.":129,"MESES U.P.":4,"PLANTA":"EXTENSION"},{"ID":13307,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2026-07-15","KMS. U.P.":43076,"KMS. PROX. P.":63076,"KMS. REC.":14482,"KMS. FAL.":5518,"DIAS U.P.":82,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":13565,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-09","FECHA ULTIMO PREVENTIVO":"2026-09-11","KMS. U.P.":23500,"KMS. PROX. P.":43500,"KMS. REC.":5071,"KMS. FAL.":14929,"DIAS U.P.":24,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":13567,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-05","FECHA ULTIMO PREVENTIVO":"2026-09-11","KMS. U.P.":23000,"KMS. PROX. P.":43000,"KMS. REC.":5842,"KMS. FAL.":14158,"DIAS U.P.":24,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":13949,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2026-07-20","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":27022,"KMS. FAL.":-7022,"DIAS U.P.":77,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":14197,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-17","FECHA ULTIMO PREVENTIVO":"2026-04-17","KMS. U.P.":22400,"KMS. PROX. P.":42400,"KMS. REC.":23718,"KMS. FAL.":-3718,"DIAS U.P.":171,"MESES U.P.":6,"PLANTA":"EXTENSION"},{"ID":14245,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-04","FECHA ULTIMO PREVENTIVO":"2026-05-04","KMS. U.P.":23000,"KMS. PROX. P.":43000,"KMS. REC.":11213,"KMS. FAL.":8787,"DIAS U.P.":154,"MESES U.P.":5,"PLANTA":"EXTENSION"},{"ID":14879,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-09","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":27420,"KMS. PROX. P.":47420,"KMS. REC.":6301,"KMS. FAL.":13699,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":14880,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-27","FECHA ULTIMO PREVENTIVO":"2026-09-04","KMS. U.P.":1403,"KMS. PROX. P.":21403,"KMS. REC.":7501,"KMS. FAL.":12499,"DIAS U.P.":31,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":15030,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-24","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":1,"KMS. PROX. P.":10001,"KMS. REC.":1776,"KMS. FAL.":8224,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":15165,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-08","FECHA ULTIMO PREVENTIVO":"2026-07-08","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":20017,"KMS. FAL.":-17,"DIAS U.P.":89,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":15166,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-04","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":6491,"KMS. FAL.":13509,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":15187,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-08","FECHA ULTIMO PREVENTIVO":"2026-08-19","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":9715,"KMS. FAL.":10285,"DIAS U.P.":47,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":15189,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-07","FECHA ULTIMO PREVENTIVO":"2026-07-08","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":24045,"KMS. FAL.":-4045,"DIAS U.P.":89,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":15449,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-05","FECHA ULTIMO PREVENTIVO":"2026-06-05","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":25849,"KMS. FAL.":-5849,"DIAS U.P.":122,"MESES U.P.":4,"PLANTA":"EXTENSION"},{"ID":15560,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-08-17","FECHA ULTIMO PREVENTIVO":"2026-08-17","KMS. U.P.":21517,"KMS. PROX. P.":41517,"KMS. REC.":7871,"KMS. FAL.":12129,"DIAS U.P.":49,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":15767,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-29","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":8181,"KMS. FAL.":11819,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":16070,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":6322,"KMS. FAL.":13678,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":16072,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-23","FECHA ULTIMO PREVENTIVO":"2026-06-23","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":16290,"KMS. FAL.":3710,"DIAS U.P.":104,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":16073,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-29","FECHA ULTIMO PREVENTIVO":"2026-06-29","KMS. U.P.":22832,"KMS. PROX. P.":42832,"KMS. REC.":18969,"KMS. FAL.":1031,"DIAS U.P.":98,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":16074,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-06","FECHA ULTIMO PREVENTIVO":"2026-07-06","KMS. U.P.":4,"KMS. PROX. P.":20004,"KMS. REC.":19851,"KMS. FAL.":149,"DIAS U.P.":91,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":16501,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-09","FECHA ULTIMO PREVENTIVO":"2026-09-17","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":3907,"KMS. FAL.":16093,"DIAS U.P.":18,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":16502,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-26","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":6588,"KMS. FAL.":13412,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":16507,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-07","FECHA ULTIMO PREVENTIVO":"2026-08-21","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":8244,"KMS. FAL.":11756,"DIAS U.P.":45,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":16517,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-23","FECHA ULTIMO PREVENTIVO":"2026-08-18","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":12486,"KMS. FAL.":7514,"DIAS U.P.":48,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":16520,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-22","FECHA ULTIMO PREVENTIVO":"2026-07-16","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":21090,"KMS. FAL.":-1090,"DIAS U.P.":81,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":16521,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-02","FECHA ULTIMO PREVENTIVO":"2026-08-20","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":13740,"KMS. FAL.":6260,"DIAS U.P.":46,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":16879,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-13","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":2390,"KMS. FAL.":17610,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":16889,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-07-15","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":21163,"KMS. FAL.":-1163,"DIAS U.P.":82,"MESES U.P.":3,"PLANTA":"EXTENSION"},{"ID":16890,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-28","FECHA ULTIMO PREVENTIVO":"2026-10-05","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":0,"KMS. FAL.":20000,"DIAS U.P.":0,"MESES U.P.":0,"PLANTA":"EXTENSION"},{"ID":16894,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-06","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":3326,"KMS. FAL.":16674,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"EXTENSION"},{"ID":16899,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-29","FECHA ULTIMO PREVENTIVO":"2026-07-24","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":19509,"KMS. FAL.":491,"DIAS U.P.":73,"MESES U.P.":2,"PLANTA":"EXTENSION"},{"ID":17475,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":4218,"KMS. FAL.":15782,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"EXTENSION"},{"ID":17476,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":4290,"KMS. FAL.":15710,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"EXTENSION"},{"ID":4641,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-28","FECHA ULTIMO PREVENTIVO":"2026-04-28","KMS. U.P.":293966,"KMS. PROX. P.":313966,"KMS. REC.":9543,"KMS. FAL.":10457,"DIAS U.P.":160,"MESES U.P.":5,"PLANTA":"MOTORES NORTE"},{"ID":4698,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-21","FECHA ULTIMO PREVENTIVO":"2026-07-21","KMS. U.P.":368314,"KMS. PROX. P.":388314,"KMS. REC.":8920,"KMS. FAL.":11080,"DIAS U.P.":76,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":4701,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-20","FECHA ULTIMO PREVENTIVO":"2026-04-20","KMS. U.P.":338662,"KMS. PROX. P.":358662,"KMS. REC.":20849,"KMS. FAL.":-849,"DIAS U.P.":168,"MESES U.P.":6,"PLANTA":"MOTORES NORTE"},{"ID":4733,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2025-09-05","KMS. U.P.":461543,"KMS. PROX. P.":481543,"KMS. REC.":9906,"KMS. FAL.":10094,"DIAS U.P.":395,"MESES U.P.":13,"PLANTA":"MOTORES NORTE"},{"ID":4756,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-26","FECHA ULTIMO PREVENTIVO":"2026-06-26","KMS. U.P.":533260,"KMS. PROX. P.":553260,"KMS. REC.":13877,"KMS. FAL.":6123,"DIAS U.P.":101,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":5614,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-08-04","FECHA ULTIMO PREVENTIVO":"2026-08-04","KMS. U.P.":2127489,"KMS. PROX. P.":2147489,"KMS. REC.":10119,"KMS. FAL.":9881,"DIAS U.P.":62,"MESES U.P.":2,"PLANTA":"MOTORES NORTE"},{"ID":5692,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-16","FECHA ULTIMO PREVENTIVO":"2026-07-16","KMS. U.P.":272216,"KMS. PROX. P.":292216,"KMS. REC.":10471,"KMS. FAL.":9529,"DIAS U.P.":81,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":5891,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-20","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":333676,"KMS. PROX. P.":353676,"KMS. REC.":3858,"KMS. FAL.":16142,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":6433,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-08","FECHA ULTIMO PREVENTIVO":"2026-07-08","KMS. U.P.":263003,"KMS. PROX. P.":283003,"KMS. REC.":22274,"KMS. FAL.":-2274,"DIAS U.P.":89,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":6662,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-22","FECHA ULTIMO PREVENTIVO":"2026-07-22","KMS. U.P.":315532,"KMS. PROX. P.":335532,"KMS. REC.":16577,"KMS. FAL.":3423,"DIAS U.P.":75,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":7099,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2026-02-05","KMS. U.P.":215772,"KMS. PROX. P.":235772,"KMS. REC.":21679,"KMS. FAL.":-1679,"DIAS U.P.":242,"MESES U.P.":8,"PLANTA":"MOTORES NORTE"},{"ID":7409,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-15","FECHA ULTIMO PREVENTIVO":"2026-07-15","KMS. U.P.":222127,"KMS. PROX. P.":242127,"KMS. REC.":9523,"KMS. FAL.":10477,"DIAS U.P.":82,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":7410,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-25","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":882512,"KMS. PROX. P.":902512,"KMS. REC.":4117,"KMS. FAL.":15883,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":7413,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-10","FECHA ULTIMO PREVENTIVO":"2026-07-10","KMS. U.P.":274785,"KMS. PROX. P.":294785,"KMS. REC.":12432,"KMS. FAL.":7568,"DIAS U.P.":87,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":11011,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-25","FECHA ULTIMO PREVENTIVO":"2026-05-25","KMS. U.P.":42554,"KMS. PROX. P.":62554,"KMS. REC.":16124,"KMS. FAL.":3876,"DIAS U.P.":133,"MESES U.P.":4,"PLANTA":"MOTORES NORTE"},{"ID":11015,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":"2026-04-01","KMS. U.P.":65709,"KMS. PROX. P.":85709,"KMS. REC.":23548,"KMS. FAL.":-3548,"DIAS U.P.":187,"MESES U.P.":6,"PLANTA":"MOTORES NORTE"},{"ID":11039,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-28","FECHA ULTIMO PREVENTIVO":"2026-05-28","KMS. U.P.":66584,"KMS. PROX. P.":86584,"KMS. REC.":10011,"KMS. FAL.":9989,"DIAS U.P.":130,"MESES U.P.":4,"PLANTA":"MOTORES NORTE"},{"ID":12866,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-19","FECHA ULTIMO PREVENTIVO":"2026-06-19","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":21897,"KMS. FAL.":-1897,"DIAS U.P.":108,"MESES U.P.":4,"PLANTA":"MOTORES NORTE"},{"ID":13001,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-11","FECHA ULTIMO PREVENTIVO":"2026-07-11","KMS. U.P.":20239,"KMS. PROX. P.":40239,"KMS. REC.":19968,"KMS. FAL.":32,"DIAS U.P.":86,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":13028,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-10","FECHA ULTIMO PREVENTIVO":"2026-07-10","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":768,"KMS. FAL.":19232,"DIAS U.P.":87,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":13354,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-20","FECHA ULTIMO PREVENTIVO":"2026-07-22","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":20643,"KMS. FAL.":-643,"DIAS U.P.":75,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":13356,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-08","FECHA ULTIMO PREVENTIVO":"2026-07-08","KMS. U.P.":50484,"KMS. PROX. P.":70484,"KMS. REC.":21017,"KMS. FAL.":-1017,"DIAS U.P.":89,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":13497,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-20","FECHA ULTIMO PREVENTIVO":"2026-09-04","KMS. U.P.":88214,"KMS. PROX. P.":108214,"KMS. REC.":4980,"KMS. FAL.":15020,"DIAS U.P.":31,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":13566,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-17","FECHA ULTIMO PREVENTIVO":"2026-07-23","KMS. U.P.":43000,"KMS. PROX. P.":63000,"KMS. REC.":16099,"KMS. FAL.":3901,"DIAS U.P.":74,"MESES U.P.":2,"PLANTA":"MOTORES NORTE"},{"ID":15288,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-26","FECHA ULTIMO PREVENTIVO":"2026-06-26","KMS. U.P.":27100,"KMS. PROX. P.":47100,"KMS. REC.":17348,"KMS. FAL.":2652,"DIAS U.P.":101,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":16100,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-14","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":4776,"KMS. FAL.":15224,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16111,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-25","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":5435,"KMS. FAL.":14565,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16118,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-19","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":20556,"KMS. PROX. P.":40556,"KMS. REC.":8423,"KMS. FAL.":11577,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16120,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-08","FECHA ULTIMO PREVENTIVO":"2026-08-17","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":11173,"KMS. FAL.":8827,"DIAS U.P.":49,"MESES U.P.":2,"PLANTA":"MOTORES NORTE"},{"ID":16122,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-10","FECHA ULTIMO PREVENTIVO":"2026-07-18","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":17377,"KMS. FAL.":2623,"DIAS U.P.":79,"MESES U.P.":3,"PLANTA":"MOTORES NORTE"},{"ID":16124,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-15","FECHA ULTIMO PREVENTIVO":"2026-09-02","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":8548,"KMS. FAL.":11452,"DIAS U.P.":33,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16127,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-13","FECHA ULTIMO PREVENTIVO":"2026-07-25","KMS. U.P.":10356,"KMS. PROX. P.":30356,"KMS. REC.":17357,"KMS. FAL.":2643,"DIAS U.P.":72,"MESES U.P.":2,"PLANTA":"MOTORES NORTE"},{"ID":16129,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-19","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":5233,"KMS. FAL.":14767,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16824,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-29","FECHA ULTIMO PREVENTIVO":"2026-09-15","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":3605,"KMS. FAL.":16395,"DIAS U.P.":20,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16826,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-14","FECHA ULTIMO PREVENTIVO":"2026-09-12","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":5617,"KMS. FAL.":14383,"DIAS U.P.":23,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16898,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-16","FECHA ULTIMO PREVENTIVO":"2026-08-17","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":11122,"KMS. FAL.":8878,"DIAS U.P.":49,"MESES U.P.":2,"PLANTA":"MOTORES NORTE"},{"ID":16937,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-26","FECHA ULTIMO PREVENTIVO":"2026-09-18","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":3167,"KMS. FAL.":16833,"DIAS U.P.":17,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":16938,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-27","FECHA ULTIMO PREVENTIVO":"2026-09-02","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":7498,"KMS. FAL.":12502,"DIAS U.P.":33,"MESES U.P.":1,"PLANTA":"MOTORES NORTE"},{"ID":17477,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":330,"KMS. FAL.":19670,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"MOTORES NORTE"},{"ID":12633,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-16","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":33894,"KMS. PROX. P.":53894,"KMS. REC.":4359,"KMS. FAL.":15641,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"MOTORES SUR"},{"ID":15895,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-14","FECHA ULTIMO PREVENTIVO":"2026-07-22","KMS. U.P.":1,"KMS. PROX. P.":15001,"KMS. REC.":13424,"KMS. FAL.":1576,"DIAS U.P.":75,"MESES U.P.":3,"PLANTA":"MOTORES SUR"},{"ID":15896,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-04","FECHA ULTIMO PREVENTIVO":"2026-07-27","KMS. U.P.":1,"KMS. PROX. P.":15001,"KMS. REC.":0,"KMS. FAL.":15000,"DIAS U.P.":70,"MESES U.P.":2,"PLANTA":"MOTORES SUR"},{"ID":15980,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-05","FECHA ULTIMO PREVENTIVO":"2026-09-11","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4102,"KMS. FAL.":15898,"DIAS U.P.":24,"MESES U.P.":1,"PLANTA":"MOTORES SUR"},{"ID":15984,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-07-20","KMS. U.P.":2,"KMS. PROX. P.":20002,"KMS. REC.":17793,"KMS. FAL.":2207,"DIAS U.P.":77,"MESES U.P.":3,"PLANTA":"MOTORES SUR"},{"ID":15987,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-14","FECHA ULTIMO PREVENTIVO":"2026-07-14","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":23545,"KMS. FAL.":-3545,"DIAS U.P.":83,"MESES U.P.":3,"PLANTA":"MOTORES SUR"},{"ID":15988,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-02","FECHA ULTIMO PREVENTIVO":"2026-09-02","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4888,"KMS. FAL.":15112,"DIAS U.P.":33,"MESES U.P.":1,"PLANTA":"MOTORES SUR"},{"ID":16431,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-11","FECHA ULTIMO PREVENTIVO":"2026-07-27","KMS. U.P.":1,"KMS. PROX. P.":15001,"KMS. REC.":20970,"KMS. FAL.":-5970,"DIAS U.P.":70,"MESES U.P.":2,"PLANTA":"MOTORES SUR"},{"ID":16432,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-09","FECHA ULTIMO PREVENTIVO":"2026-07-28","KMS. U.P.":1,"KMS. PROX. P.":15001,"KMS. REC.":11314,"KMS. FAL.":3686,"DIAS U.P.":69,"MESES U.P.":2,"PLANTA":"MOTORES SUR"},{"ID":16503,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-10","FECHA ULTIMO PREVENTIVO":"2026-10-01","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":222,"KMS. FAL.":19778,"DIAS U.P.":4,"MESES U.P.":0,"PLANTA":"MOTORES SUR"},{"ID":16504,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-13","FECHA ULTIMO PREVENTIVO":"2026-07-13","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":20023,"KMS. FAL.":-23,"DIAS U.P.":84,"MESES U.P.":3,"PLANTA":"MOTORES SUR"},{"ID":16505,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-08","FECHA ULTIMO PREVENTIVO":"2026-08-19","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":6671,"KMS. FAL.":13329,"DIAS U.P.":47,"MESES U.P.":2,"PLANTA":"MOTORES SUR"},{"ID":16506,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-08","FECHA ULTIMO PREVENTIVO":"2026-07-28","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":14373,"KMS. FAL.":5627,"DIAS U.P.":69,"MESES U.P.":2,"PLANTA":"MOTORES SUR"},{"ID":16518,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-04","FECHA ULTIMO PREVENTIVO":"2026-07-04","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":23132,"KMS. FAL.":-3132,"DIAS U.P.":93,"MESES U.P.":3,"PLANTA":"MOTORES SUR"},{"ID":16519,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-04","FECHA ULTIMO PREVENTIVO":"2026-07-04","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":17754,"KMS. FAL.":2246,"DIAS U.P.":93,"MESES U.P.":3,"PLANTA":"MOTORES SUR"},{"ID":16892,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-25","FECHA ULTIMO PREVENTIVO":"2026-08-19","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":13741,"KMS. FAL.":6259,"DIAS U.P.":47,"MESES U.P.":2,"PLANTA":"MOTORES SUR"},{"ID":17405,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":10000,"KMS. REC.":7100,"KMS. FAL.":2900,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"MOTORES SUR"},{"ID":17470,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"-","FECHA ULTIMO PREVENTIVO":null,"KMS. U.P.":null,"KMS. PROX. P.":20000,"KMS. REC.":4887,"KMS. FAL.":15113,"DIAS U.P.":null,"MESES U.P.":null,"PLANTA":"MOTORES SUR"},{"ID":4669,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-27","FECHA ULTIMO PREVENTIVO":"2026-07-27","KMS. U.P.":365551,"KMS. PROX. P.":385551,"KMS. REC.":14769,"KMS. FAL.":5231,"DIAS U.P.":70,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":4671,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-06","FECHA ULTIMO PREVENTIVO":"2026-07-06","KMS. U.P.":426498,"KMS. PROX. P.":446498,"KMS. REC.":16021,"KMS. FAL.":3979,"DIAS U.P.":91,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":4687,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-23","FECHA ULTIMO PREVENTIVO":"2026-06-23","KMS. U.P.":489244,"KMS. PROX. P.":509244,"KMS. REC.":15786,"KMS. FAL.":4214,"DIAS U.P.":104,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":4703,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-06-23","KMS. U.P.":381522,"KMS. PROX. P.":401522,"KMS. REC.":20014,"KMS. FAL.":-14,"DIAS U.P.":104,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":4718,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-17","FECHA ULTIMO PREVENTIVO":"2026-09-02","KMS. U.P.":312536,"KMS. PROX. P.":332536,"KMS. REC.":6034,"KMS. FAL.":13966,"DIAS U.P.":33,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":5470,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-02","FECHA ULTIMO PREVENTIVO":"2026-09-02","KMS. U.P.":413761,"KMS. PROX. P.":433761,"KMS. REC.":6157,"KMS. FAL.":13843,"DIAS U.P.":33,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":6115,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-09","FECHA ULTIMO PREVENTIVO":"2026-09-09","KMS. U.P.":212343,"KMS. PROX. P.":232343,"KMS. REC.":710,"KMS. FAL.":19290,"DIAS U.P.":26,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":6358,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-09","FECHA ULTIMO PREVENTIVO":"2026-07-23","KMS. U.P.":3478041,"KMS. PROX. P.":3498041,"KMS. REC.":13451,"KMS. FAL.":6549,"DIAS U.P.":74,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":6432,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-15","FECHA ULTIMO PREVENTIVO":"2026-08-17","KMS. U.P.":222200,"KMS. PROX. P.":242200,"KMS. REC.":17236,"KMS. FAL.":2764,"DIAS U.P.":49,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":6434,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-21","FECHA ULTIMO PREVENTIVO":"2026-06-17","KMS. U.P.":469971,"KMS. PROX. P.":489971,"KMS. REC.":23994,"KMS. FAL.":-3994,"DIAS U.P.":110,"MESES U.P.":4,"PLANTA":"VAN"},{"ID":6435,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-26","FECHA ULTIMO PREVENTIVO":"2026-05-26","KMS. U.P.":481575,"KMS. PROX. P.":501575,"KMS. REC.":10384,"KMS. FAL.":9616,"DIAS U.P.":132,"MESES U.P.":4,"PLANTA":"VAN"},{"ID":6452,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-03","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":361698,"KMS. PROX. P.":381698,"KMS. REC.":3842,"KMS. FAL.":16158,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":7822,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-24","FECHA ULTIMO PREVENTIVO":"2026-06-24","KMS. U.P.":285332,"KMS. PROX. P.":305332,"KMS. REC.":15195,"KMS. FAL.":4805,"DIAS U.P.":103,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":9470,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-22","FECHA ULTIMO PREVENTIVO":"2026-09-17","KMS. U.P.":171895,"KMS. PROX. P.":191895,"KMS. REC.":3586,"KMS. FAL.":16414,"DIAS U.P.":18,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":9610,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-25","FECHA ULTIMO PREVENTIVO":"2026-09-17","KMS. U.P.":266418,"KMS. PROX. P.":286418,"KMS. REC.":3908,"KMS. FAL.":16092,"DIAS U.P.":18,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":11038,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-30","FECHA ULTIMO PREVENTIVO":"2026-04-30","KMS. U.P.":90974,"KMS. PROX. P.":110974,"KMS. REC.":21562,"KMS. FAL.":-1562,"DIAS U.P.":158,"MESES U.P.":5,"PLANTA":"VAN"},{"ID":11177,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-06","FECHA ULTIMO PREVENTIVO":"2026-07-06","KMS. U.P.":47128,"KMS. PROX. P.":67128,"KMS. REC.":19076,"KMS. FAL.":924,"DIAS U.P.":91,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":12799,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-18","FECHA ULTIMO PREVENTIVO":"2026-07-18","KMS. U.P.":24184,"KMS. PROX. P.":44184,"KMS. REC.":15654,"KMS. FAL.":4346,"DIAS U.P.":79,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":12950,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-07","FECHA ULTIMO PREVENTIVO":"2026-08-04","KMS. U.P.":46791,"KMS. PROX. P.":66791,"KMS. REC.":14420,"KMS. FAL.":5580,"DIAS U.P.":62,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":13025,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-24","FECHA ULTIMO PREVENTIVO":"2026-09-24","KMS. U.P.":81093,"KMS. PROX. P.":101093,"KMS. REC.":1496,"KMS. FAL.":18504,"DIAS U.P.":11,"MESES U.P.":0,"PLANTA":"VAN"},{"ID":13568,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-26","FECHA ULTIMO PREVENTIVO":"2026-06-26","KMS. U.P.":23715,"KMS. PROX. P.":43715,"KMS. REC.":18047,"KMS. FAL.":1953,"DIAS U.P.":101,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":13904,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-17","FECHA ULTIMO PREVENTIVO":"2026-06-17","KMS. U.P.":198120,"KMS. PROX. P.":218120,"KMS. REC.":23949,"KMS. FAL.":-3949,"DIAS U.P.":110,"MESES U.P.":4,"PLANTA":"VAN"},{"ID":14215,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-08","FECHA ULTIMO PREVENTIVO":"2026-08-12","KMS. U.P.":20000,"KMS. PROX. P.":40000,"KMS. REC.":12944,"KMS. FAL.":7056,"DIAS U.P.":54,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":15982,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-21","FECHA ULTIMO PREVENTIVO":"2026-09-11","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4833,"KMS. FAL.":15167,"DIAS U.P.":24,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":15983,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-05","FECHA ULTIMO PREVENTIVO":"2026-09-14","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4565,"KMS. FAL.":15435,"DIAS U.P.":21,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":15985,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-05","FECHA ULTIMO PREVENTIVO":"2026-07-13","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":15624,"KMS. FAL.":4376,"DIAS U.P.":84,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":15986,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-08-19","FECHA ULTIMO PREVENTIVO":"2026-08-19","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":6317,"KMS. FAL.":13683,"DIAS U.P.":47,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":15989,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-29","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":7512,"KMS. FAL.":12488,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16087,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-06","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":7095,"KMS. FAL.":12905,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16088,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-07-23","FECHA ULTIMO PREVENTIVO":"2026-07-23","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":11268,"KMS. FAL.":8732,"DIAS U.P.":74,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":16089,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-14","FECHA ULTIMO PREVENTIVO":"2026-07-22","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":16843,"KMS. FAL.":3157,"DIAS U.P.":75,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":16090,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-04","FECHA ULTIMO PREVENTIVO":"2026-09-10","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":5580,"KMS. FAL.":14420,"DIAS U.P.":25,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16091,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-10","FECHA ULTIMO PREVENTIVO":"2026-09-07","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":7071,"KMS. FAL.":12929,"DIAS U.P.":28,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16515,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-25","FECHA ULTIMO PREVENTIVO":"2026-09-17","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4045,"KMS. FAL.":15955,"DIAS U.P.":18,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16516,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-04-07","FECHA ULTIMO PREVENTIVO":"2026-07-16","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":20256,"KMS. FAL.":-256,"DIAS U.P.":81,"MESES U.P.":3,"PLANTA":"VAN"},{"ID":16566,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-09-11","FECHA ULTIMO PREVENTIVO":"2026-09-12","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4413,"KMS. FAL.":15587,"DIAS U.P.":23,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16567,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-09","FECHA ULTIMO PREVENTIVO":"2026-08-06","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":24218,"KMS. FAL.":-4218,"DIAS U.P.":60,"MESES U.P.":2,"PLANTA":"VAN"},{"ID":16816,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-28","FECHA ULTIMO PREVENTIVO":"2026-09-12","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":5769,"KMS. FAL.":14231,"DIAS U.P.":23,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16822,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-18","FECHA ULTIMO PREVENTIVO":"2026-09-03","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":6580,"KMS. FAL.":13420,"DIAS U.P.":32,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16827,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-28","FECHA ULTIMO PREVENTIVO":"2026-09-12","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4556,"KMS. FAL.":15444,"DIAS U.P.":23,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16842,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-09","FECHA ULTIMO PREVENTIVO":"2026-06-09","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":18038,"KMS. FAL.":1962,"DIAS U.P.":118,"MESES U.P.":4,"PLANTA":"VAN"},{"ID":16843,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-06-05","FECHA ULTIMO PREVENTIVO":"2026-09-12","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4279,"KMS. FAL.":15721,"DIAS U.P.":23,"MESES U.P.":1,"PLANTA":"VAN"},{"ID":16896,"SERVICIO":"PREVENTIVO","FECHA PENULTIMO PREVENTIVO":"2026-05-18","FECHA ULTIMO PREVENTIVO":"2026-09-14","KMS. U.P.":1,"KMS. PROX. P.":20001,"KMS. REC.":4674,"KMS. FAL.":15326,"DIAS U.P.":21,"MESES U.P.":1,"PLANTA":"VAN"}];
+const ST = {
+  inm:{n:'Programación inmediata',s:'Inmediata',h:'#3b4cca'},
+  sem:{n:'Esta semana',s:'Esta semana',h:'#2f80ed'},
+  q15:{n:'Próximos 15 días',s:'15 días',h:'#17a2b8'},
+  m30:{n:'Próximos 30 días',s:'30 días',h:'#7cb342'},
+  ok:{n:'Al corriente',s:'Al corriente',h:'#1e9e62'},
+};
+const PL_COL = {'CAMIONES':'#2457d6','EXTENSION':'#0ea5a4','VAN':'#8b5cf6','MOTORES NORTE':'#f2711c','MOTORES SUR':'#c2417a'};
+const plCol = p => PL_COL[p] || '#64748b';
+const DAY = 864e5;
+const $ = id => document.getElementById(id);
+const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DOW = ['dom','lun','mar','mié','jue','vie','sáb'];
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function pd(v){
+  if(v==null||v===''||v==='-') return null;
+  if(v instanceof Date) return isNaN(v)?null:new Date(v.getFullYear(),v.getMonth(),v.getDate(),12);
+  if(typeof v==='number'){const d=new Date(Math.round((v-25569)*DAY));return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),12);}
+  const s=String(v).trim(); let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(+m[1],m[2]-1,+m[3],12);
+  m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+  if(m){let y=+m[3]; if(y<100)y+=2000; return new Date(y,m[2]-1,+m[1],12);}
+  const d=new Date(s); return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);
+}
+const add=(d,n)=>new Date(d.getTime()+n*DAY);
+const diff=(a,b)=>Math.round((a-b)/DAY);
+const f=d=>d?`${String(d.getDate()).padStart(2,'0')}-${MES[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`:'—';
+const fs=d=>d?`${d.getDate()} ${MES[d.getMonth()]}`:'—';
+const iso=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
+const num=v=>{if(v==null||v===''||v==='-')return null;const x=+String(v).replace(/,/g,'');return isNaN(x)?null:x;};
+const median=a=>{const s=a.filter(x=>x!=null).sort((x,y)=>x-y);if(!s.length)return null;const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+const todayN=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate(),12);};
+function normKey(k){return String(k).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z]/g,'');}
+function pick(o,...c){for(const k in o){if(c.includes(normKey(k)))return o[k];}return null;}
+
+/* ---------- estado ---------- */
+let BASE=[], REG=[], U=[], CFG={}, EDIT=false, PIN='';
+let URL_ = SCRIPT_URL; try{ URL_ = localStorage.getItem('prev_ste_url') || SCRIPT_URL; }catch(e){}
+
+function fromRow(o){
+  return {
+    id: String(pick(o,'ID','UNIDAD','ECO','ECONOMICO')??'').trim(),
+    planta: String(pick(o,'PLANTA')??'').trim().toUpperCase()||'SIN PLANTA',
+    pen: pd(pick(o,'FECHAPENULTIMOPREVENTIVO')), ult: pd(pick(o,'FECHAULTIMOPREVENTIVO')),
+    kmUP: num(pick(o,'KMSUP')), kmProx: num(pick(o,'KMSPROXP')),
+    kmRec: num(pick(o,'KMSREC')), kmFal: num(pick(o,'KMSFAL')),
+    diasUP: num(pick(o,'DIASUP')), kmDia: num(pick(o,'KMDIA')), refKm: pd(pick(o,'FECHAREFKM')),
+    obs: String(pick(o,'OBSERVACIONES')??''),
+  };
+}
+function toRow(r,bulk){
+  const o={'ID':r.id,'PLANTA':r.planta,'FECHA PENULTIMO PREVENTIVO':iso(r.pen),'FECHA ULTIMO PREVENTIVO':iso(r.ult),
+    'KMS. U.P.':r.kmUP??'','KMS. PROX. P.':r.kmProx??'','KMS. REC.':r.kmRec??'','KMS. FAL.':r.kmFal??'',
+    'DIAS U.P.':r.diasUP??'','KM_DIA':r.kmDia??'','FECHA_REF_KM':iso(r.refKm),'OBSERVACIONES':r.obs||''};
+  if(bulk&&!r.obs) delete o.OBSERVACIONES;
+  return o;
+}
+function setBase(rows){
+  BASE = rows.map(fromRow).filter(r=>r.id);
+  BASE.forEach(r=>{ if(!r.refKm && r.ult && r.diasUP!=null) r.refKm=add(r.ult,r.diasUP); });
+}
+
+/* ---------- servidor ---------- */
+async function api(action, payload={}){
+  if(!URL_) return {ok:true, local:true};
+  const res = await fetch(URL_, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, pin:PIN, ...payload})});
+  const j = await res.json();
+  if(!j.ok) throw new Error(j.error||'Error del servidor');
+  return j;
+}
+async function fetchAll(){
+  const res = await fetch(URL_+(URL_.includes('?')?'&':'?')+'action=list&t='+Date.now());
+  const j = await res.json(); if(!j.ok) throw new Error(j.error||'Error al leer el Sheet');
+  return j;
+}
+function setConn(state, txt){ const c=$('conn'); c.className='conn '+state; c.querySelector('span').textContent=txt; $('banLocal').style.display=''; $('banLocal').classList.toggle('local', state!=='on'); }
+
+async function init(){
+  if(URL_){
+    setConn('', 'Conectando…');
+    try{
+      const j = await fetchAll();
+      if(j.unidades.length){ setBase(j.unidades); REG=j.registro||[]; setConn('on','Google Sheet'); }
+      else { setBase(SEED); REG=j.registro||[]; setConn('off','Sheet vacío · datos iniciales'); toast('El Sheet no tiene unidades. En modo edición usa ⚙ Conexión ▸ "Subir datos al Sheet".'); }
+    }catch(e){ setBase(SEED); REG=[]; setConn('off','Sin conexión · datos iniciales'); toast('No se pudo leer el Sheet: '+e.message,true); }
+  } else { setBase(SEED); REG=[]; setConn('off','Datos iniciales (sin Sheet)'); }
+  initFilters(); compute();
+}
+function initFilters(){
+  const t=todayN(); if(!$('hoy').value) $('hoy').value=iso(t);
+  const pl=[...new Set(BASE.map(r=>r.planta))].sort(), cur=$('fPlanta').value;
+  $('fPlanta').innerHTML='<option value="">Todas las plantas</option>'+pl.map(p=>`<option ${p===cur?'selected':''}>${esc(p)}</option>`).join('');
+  if(!$('fEst').options.length) $('fEst').innerHTML='<option value="">Todos</option>'+Object.entries(ST).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
+  $('gleg').innerHTML=Object.values(ST).map(s=>`<span><i class="dot" style="--c:${s.h}"></i>${s.n}</span>`).join('')+
+    '<span style="margin-left:8px">▬ ciclo desde último preventivo</span><span>▨ ventana de anticipación</span><span>◆ fecha proyectada</span><span>■ día programado</span>';
+}
+
+/* ---------- cálculo ---------- */
+function compute(){
+  const hoy=pd($('hoy').value)||todayN();
+  const cap=Math.max(1,+$('cap').value||6), lead=Math.max(0,+$('lead').value||0), sab=$('sab').checked;
+  const rateOf=r=>r.kmDia>0?r.kmDia:(r.diasUP>=7&&r.kmRec>0&&r.kmRec/r.diasUP>=20)?r.kmRec/r.diasUP:null;
+  const byPl={}; BASE.forEach(r=>{const x=rateOf(r);if(x)(byPl[r.planta]=byPl[r.planta]||[]).push(x);});
+  const medPl={}; for(const p in byPl) medPl[p]=median(byPl[p]);
+  const medAll=median(BASE.map(rateOf))||190;
+  const rc={}; BASE.forEach(r=>{if(r.refKm){const k=iso(r.refKm);rc[k]=(rc[k]||0)+1;}});
+  const corte=pd((Object.entries(rc).sort((a,b)=>b[1]-a[1])[0]||[])[0])||hoy;
+  const medIv=median(BASE.map(r=>r.pen&&r.ult?diff(r.ult,r.pen):null).filter(x=>x!=null&&x>=45&&x<=250))||100;
+
+  U = BASE.map(r=>{
+    const interval=(r.pen&&r.ult)?diff(r.ult,r.pen):null;
+    const ivOk=interval!=null&&interval>=45&&interval<=250;
+    let rate=rateOf(r); if(!rate) rate=medPl[r.planta]||medAll;
+    const kmFal=r.kmFal!=null?r.kmFal:(r.kmProx!=null&&r.kmUP!=null&&r.kmRec!=null?r.kmProx-r.kmUP-r.kmRec:null);
+    const ref=r.refKm||r.ult||corte;
+    const fKm=(kmFal!=null&&rate&&ref)?add(ref,kmFal/rate):null;
+    const fFec=r.ult?add(r.ult,ivOk?interval:medIv):null;
+    let proy = (fKm&&fFec&&ivOk) ? (fKm<fFec?fKm:fFec) : (fKm||fFec);
+    if(proy) proy=new Date(proy.getFullYear(),proy.getMonth(),proy.getDate(),12);
+    const dias=proy?diff(proy,hoy):null;
+    const st=dias==null||dias<0?'inm':dias<=7?'sem':dias<=15?'q15':dias<=30?'m30':'ok';
+    return {...r, interval, ivOk, rate, kmNow:kmFal!=null&&ref?kmFal-rate*diff(hoy,ref):null, proy, dias, st};
+  });
+  const load={}, isWork=d=>{const w=d.getDay();return w!==0&&(sab||w!==6);};
+  [...U].sort((a,b)=>((a.proy||0)-(b.proy||0))||((a.kmNow??0)-(b.kmNow??0))).forEach(u=>{
+    let d=u.proy?add(u.proy,-lead):hoy; if(d<hoy) d=hoy;
+    for(let g=0;g<800;g++){const k=iso(d);if(isWork(d)&&(load[k]||0)<cap){load[k]=(load[k]||0)+1;u.prog=d;break;}d=add(d,1);}
+  });
+  CFG={hoy,cap,lead,sab,load};
+  render();
+}
+const filtered=()=>{const p=$('fPlanta').value,s=$('fEst').value;return U.filter(u=>(!p||u.planta===p)&&(!s||u.st===s));};
+const pill=u=>`<span class="pill" style="--c:${ST[u.st].h}">${ST[u.st].s}</span>`;
+const pTxt=u=>u.proy&&u.proy>=CFG.hoy?f(u.proy):'Inmediato';
+const diasTxt=u=>u.dias==null?'—':u.dias<0?'Inmediata':u.dias===0?'Hoy':u.dias+' d';
+
+/* ---------- render ---------- */
+let charts={};
+function mk(id,cfg){charts[id]?.destroy();charts[id]=new Chart($(id),cfg);}
+Chart.defaults.font.family='Inter';Chart.defaults.font.size=11.5;Chart.defaults.color='#4a5672';
+Chart.defaults.plugins.legend.labels.boxWidth=10;Chart.defaults.plugins.legend.labels.boxHeight=10;
+
+function render(){
+  const F=filtered(), {hoy,cap}=CFG;
+  $('subt').textContent=`${U.length} unidades · ${[...new Set(U.map(u=>u.planta))].length} plantas · Plan desde ${f(hoy)}`;
+  const c=k=>F.filter(u=>u.st===k).length;
+  const mes0=new Date(hoy.getFullYear(),hoy.getMonth(),1,12);
+  const atMes=REG.filter(r=>r.ACCION==='ATENCION'&&pd(r.FECHA_ATENCION)>=mes0).length;
+  const kp=[
+    {l:'Unidades',v:F.length,d:'en el filtro actual',c:'var(--nav)',k:''},
+    {l:ST.inm.n,v:c('inm'),d:'primeras en el plan',c:ST.inm.h,k:'inm'},
+    {l:ST.sem.n,v:c('sem'),d:'en los próximos 7 días',c:ST.sem.h,k:'sem'},
+    {l:ST.q15.n,v:c('q15'),d:'entre 8 y 15 días',c:ST.q15.h,k:'q15'},
+    {l:ST.m30.n,v:c('m30'),d:'entre 16 y 30 días',c:ST.m30.h,k:'m30'},
+    {l:ST.ok.n,v:c('ok'),d:'más de 30 días',c:ST.ok.h,k:'ok'},
+    {l:'Plan 30 días',v:F.filter(u=>u.prog&&diff(u.prog,hoy)<=30).length,d:`capacidad ${cap}/día`,c:'var(--accent)',k:''},
+    {l:'Atendidas en el mes',v:atMes,d:MES[hoy.getMonth()]+' '+hoy.getFullYear(),c:'#0f766e',k:'reg'},
+  ];
+  $('kpis').innerHTML=kp.map(x=>`<div class="kpi" style="--c:${x.c}" data-k="${x.k}"><div class="l">${x.l}</div><div class="v">${x.v}</div><div class="d">${x.d}</div></div>`).join('');
+  document.querySelectorAll('#kpis .kpi').forEach(el=>el.onclick=()=>{ if(el.dataset.k==='reg'){goTab('registro');return;} $('fEst').value=el.dataset.k;render();});
+
+  const wk0=add(hoy,-((hoy.getDay()+6)%7)), W=12;
+  const labels=['Inmediata',...Array.from({length:W},(_,i)=>'Sem '+fs(add(wk0,i*7)))];
+  const plantas=[...new Set(F.map(u=>u.planta))].sort();
+  mk('cWeek',{type:'bar',data:{labels,datasets:plantas.map(p=>({label:p,backgroundColor:plCol(p),borderRadius:3,data:labels.map((_,i)=>F.filter(u=>u.planta===p&&(i===0?u.st==='inm':u.st!=='inm'&&u.proy&&Math.floor(diff(u.proy,wk0)/7)===i-1)).length)}))},
+    options:{maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'#eef1f6'},ticks:{precision:0}}},plugins:{legend:{position:'bottom'}}}});
+  const ks=Object.keys(ST);
+  mk('cEst',{type:'doughnut',data:{labels:ks.map(k=>ST[k].n),datasets:[{data:ks.map(c),backgroundColor:ks.map(k=>ST[k].h),borderWidth:2,borderColor:'#fff'}]},
+    options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom'}}}});
+  const days=Array.from({length:45},(_,i)=>add(hoy,i));
+  const ld=days.map(d=>F.filter(u=>u.prog&&iso(u.prog)===iso(d)));
+  mk('cLoad',{type:'bar',data:{labels:days.map(d=>`${DOW[d.getDay()]} ${d.getDate()}`),datasets:[
+      ...ks.map(k=>({label:ST[k].n,backgroundColor:ST[k].h,data:ld.map(a=>a.filter(u=>u.st===k).length),stack:'s',borderRadius:2})),
+      {type:'line',label:'Capacidad',data:days.map(d=>(d.getDay()===0||(!CFG.sab&&d.getDay()===6))?null:cap),borderColor:'#14213d',borderDash:[5,4],pointRadius:0,borderWidth:1.5,stepped:'middle'}]},
+    options:{maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:90,font:{size:10}}},y:{stacked:true,ticks:{precision:0},grid:{color:'#eef1f6'}}},plugins:{legend:{position:'bottom'}}}});
+  const wl=Array.from({length:10},(_,i)=>add(wk0,i*7));
+  mk('cPlan',{type:'bar',data:{labels:wl.map(w=>'Sem '+fs(w)),datasets:plantas.map(p=>({label:p,backgroundColor:plCol(p),borderRadius:3,data:wl.map(w=>F.filter(u=>u.planta===p&&u.prog&&u.prog>=w&&u.prog<add(w,7)).length)}))},
+    options:{maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{precision:0},grid:{color:'#eef1f6'}}},plugins:{legend:{position:'bottom'}}}});
+
+  const rowsP=plantas.map(p=>{const a=F.filter(u=>u.planta===p);return{p,n:a.length,iv:median(a.filter(u=>u.ivOk).map(u=>u.interval)),i:a.filter(u=>u.st==='inm').length,s:a.filter(u=>u.st==='sem').length,m:a.filter(u=>u.dias!=null&&u.dias<=30).length};});
+  $('tPlanta').innerHTML=`<table><tr><th>Planta</th><th class="num">Unid.</th><th class="num">Días entre prev.</th><th class="num">Inmediata</th><th class="num">Esta semana</th><th class="num">≤30 d</th></tr>${rowsP.map(r=>`<tr><td><i class="dot" style="--c:${plCol(r.p)}"></i> ${esc(r.p)}</td><td class="num">${r.n}</td><td class="num">${r.iv==null?'—':Math.round(r.iv)}</td><td class="num">${r.i}</td><td class="num">${r.s}</td><td class="num">${r.m}</td></tr>`).join('')}</table>`;
+  const top=[...F].filter(u=>u.prog).sort((a,b)=>a.prog-b.prog||((a.proy||0)-(b.proy||0))).slice(0,15);
+  $('tTop').innerHTML=`<div class="tblwrap" style="max-height:300px"><table><tr><th>Unidad</th><th>Planta</th><th>Último prev.</th><th>Estatus</th><th>Programado</th><th class="edit-only"></th></tr>${top.map(u=>`<tr><td class="mono"><b>${esc(u.id)}</b></td><td>${esc(u.planta)}</td><td>${f(u.ult)}</td><td>${pill(u)}</td><td><b>${DOW[u.prog.getDay()]} ${f(u.prog)}</b></td><td class="edit-only"><button class="b sm ok" onclick="openAttend('${esc(u.id)}')">✓ Atendida</button></td></tr>`).join('')}</table></div>`;
+
+  renderGantt(F); renderDays(F); renderDet(F); renderReg();
+}
+
+/* ---------- Gantt ---------- */
+function renderGantt(F){
+  const {hoy}=CFG, H=+$('hor').value, PX=H>90?12:H>60?16:22;
+  const grp=document.querySelector('input[name=gg]:checked').value, q=$('gq').value.trim().toUpperCase();
+  const start=add(hoy,-14), end=add(hoy,H), N=diff(end,start)+1, Wd=N*PX;
+  let rows=F.filter(u=>u.prog&&u.prog<=end&&(!q||u.id.toUpperCase().includes(q)||u.planta.includes(q)));
+  rows.sort((a,b)=>(a.prog-b.prog)||((a.proy||0)-(b.proy||0)));
+  const x=d=>Math.max(0,Math.min(Wd,diff(d,start)*PX));
+  let groups=[];
+  if(grp==='planta'){const ps=[...new Set(rows.map(u=>u.planta))].sort();groups=ps.map(p=>{const r=rows.filter(u=>u.planta===p);return{t:`${p} · ${r.length} unid.`,r};});}
+  else{const m=new Map();rows.forEach(u=>{const w=add(u.prog,-((u.prog.getDay()+6)%7));const k=iso(w);if(!m.has(k))m.set(k,{w,r:[]});m.get(k).r.push(u);});
+    groups=[...m.values()].map(g=>({t:`Sem ${fs(g.w)} – ${fs(add(g.w,6))} · ${g.r.length} unid.`,r:g.r}));}
+  $('gcount').textContent=`${rows.length} unidades programadas en los próximos ${H} días`;
+  let months='',cur=null,cy=null,cw=0,dh='',bg='';
+  const nonWork=d=>d.getDay()===0||(!CFG.sab&&d.getDay()===6);
+  for(let i=0;i<N;i++){const d=add(start,i);
+    if(d.getMonth()!==cur){if(cur!==null)months+=`<div class="gm" style="width:${cw}px">${MES[cur].toUpperCase()} ${cy}</div>`;cur=d.getMonth();cy=d.getFullYear();cw=0;}cw+=PX;
+    dh+=`<div class="gd ${nonWork(d)?'we':''} ${iso(d)===iso(hoy)?'today':''}" style="width:${PX}px">${PX>=16||d.getDate()%2?d.getDate():''}</div>`;
+    if(nonWork(d))bg+=`<div class="gbg we" style="left:${i*PX}px;width:${PX}px"></div>`;}
+  months+=`<div class="gm" style="width:${cw}px">${MES[cur].toUpperCase()} ${cy}</div>`;
+  let left=`<div class="gcorner">Unidad · Planta</div>`, body='';
+  groups.forEach(g=>{
+    left+=`<div class="gsec">${esc(g.t)}</div>`; body+=`<div class="gsecR"></div>`;
+    g.r.forEach(u=>{
+      const c=ST[u.st].h;
+      left+=`<div class="glabel"><i class="dot" style="--c:${plCol(u.planta)}"></i><b>${esc(u.id)}</b><small>${esc(u.planta)} · ${ST[u.st].s}</small></div>`;
+      let s=`<div class="grow" style="--c:${c}">`;
+      if(u.ult&&u.proy){const a=x(u.ult),b=x(u.proy);if(b>a)s+=`<div class="gcyc" style="left:${a}px;width:${b-a}px"></div>`;}
+      if(u.proy&&u.proy>=hoy){const a=x(add(u.proy,-CFG.lead)),b=x(add(u.proy,1));if(b>a)s+=`<div class="gwin" style="left:${a}px;width:${b-a}px"></div>`;
+        if(u.proy>=start&&u.proy<=end)s+=`<div class="gdia" style="left:${x(u.proy)+PX/2-5}px"></div>`;}
+      s+=`<div class="gslot" data-id="${esc(u.id)}" style="left:${x(u.prog)+1}px;width:${PX-2}px"></div></div>`;
+      body+=s;
+    });
+  });
+  const todayX=x(hoy)+PX/2-1;
+  $('gwrap').innerHTML=`<div class="gt" style="grid-template-columns:250px ${Wd}px"><div class="gleft">${left}</div>
+     <div style="position:relative"><div class="ghead" style="width:${Wd}px"><div class="gmonths">${months}</div><div class="gdays">${dh}</div></div>
+     <div style="position:relative">${bg}<div class="gtoday" style="left:${todayX}px"></div>${body}</div></div></div>`;
+  $('gwrap').querySelectorAll('.gslot').forEach(el=>{const u=U.find(z=>z.id===el.dataset.id);
+    el.onmousemove=e=>showTip(e,u); el.onmouseleave=hideTip; el.onclick=()=>{ if(EDIT){hideTip();openAttend(u.id);} };});
+  $('gwrap').scrollLeft=Math.max(0,todayX-120);
+}
+function showTip(e,u){const t=$('tip');t.style.display='block';
+  t.innerHTML=`<b>Unidad ${esc(u.id)}</b> · ${esc(u.planta)}<br>Penúltimo: ${f(u.pen)} · Último: ${f(u.ult)}<br>Próximo preventivo: <b>${pTxt(u)}</b><br>Programado: <b>${DOW[u.prog.getDay()]} ${f(u.prog)}</b><br>Estatus: ${ST[u.st].n}${u.obs?`<br>Obs.: ${esc(u.obs)}`:''}${EDIT?'<br><i>Clic para registrar atención</i>':''}`;
+  const W=t.offsetWidth,Hh=t.offsetHeight;let X=e.clientX+14,Y=e.clientY+14;if(X+W>innerWidth-8)X=e.clientX-W-14;if(Y+Hh>innerHeight-8)Y=e.clientY-Hh-14;t.style.left=X+'px';t.style.top=Y+'px';}
+function hideTip(){$('tip').style.display='none';}
+
+/* ---------- programa diario ---------- */
+function renderDays(F){
+  const {hoy,cap}=CFG, m=new Map();
+  [...F].filter(u=>u.prog).sort((a,b)=>a.prog-b.prog||((a.proy||0)-(b.proy||0))).forEach(u=>{const k=iso(u.prog);if(!m.has(k))m.set(k,[]);m.get(k).push(u);});
+  const keys=[...m.keys()].filter(k=>diff(pd(k),hoy)<=45);
+  $('days').innerHTML=keys.map(k=>{const d=pd(k),a=m.get(k),tot=CFG.load[k]||a.length;
+    return `<div class="day"><h4>${DOW[d.getDay()].toUpperCase()} ${f(d)}<span>${a.length}${a.length!==tot?` de ${tot}`:''} / ${cap}</span></h4>
+    <div style="padding:0 14px"><div class="bar"><i style="width:${Math.min(100,tot/cap*100)}%"></i></div></div>
+    <ul>${a.map(u=>`<li><i class="dot" style="--c:${ST[u.st].h}"></i><b>${esc(u.id)}</b>${esc(u.planta)}<small>${u.st==='inm'?'prioridad':'proy. '+fs(u.proy)}</small><button class="b sm ok edit-only" title="Registrar atención" onclick="openAttend('${esc(u.id)}')">✓</button></li>`).join('')}</ul></div>`;}).join('')||'<div class="card">Sin unidades en el filtro.</div>';
+}
+
+/* ---------- detalle ---------- */
+const COLS=[
+  ['id','Unidad',u=>`<b class="mono">${esc(u.id)}</b>`],
+  ['planta','Planta',u=>`<i class="dot" style="--c:${plCol(u.planta)}"></i> ${esc(u.planta)}`],
+  ['pen','Penúltimo',u=>f(u.pen)],['ult','Último',u=>f(u.ult)],
+  ['interval','Días entre prev.',u=>u.ivOk?u.interval:'—',1],
+  ['proy','Próximo preventivo',u=>`<b>${pTxt(u)}</b>`],
+  ['dias','Tiempo restante',u=>diasTxt(u),1],['st','Estatus',u=>pill(u)],
+  ['prog','Programado',u=>`<b>${u.prog?f(u.prog):'—'}</b>`],
+  ['obs','Observaciones',u=>`<span style="white-space:normal;display:inline-block;max-width:260px;color:var(--ink2)">${esc(u.obs)}</span>`],
+];
+let sortK='prog',sortD=1;
+function renderDet(F){
+  const q=$('q').value.trim().toUpperCase();
+  let a=F.filter(u=>!q||[u.id,u.planta,ST[u.st].n,u.obs].join(' ').toUpperCase().includes(q));
+  const ord={inm:0,sem:1,q15:2,m30:3,ok:4};
+  a.sort((x,y)=>{let A=x[sortK],B=y[sortK];if(sortK==='st'){A=ord[A];B=ord[B];}if(A==null||A==='')return 1;if(B==null||B==='')return -1;return (A>B?1:A<B?-1:0)*sortD;});
+  $('qcount').textContent=`${a.length} unidades`;
+  $('tDet').innerHTML=`<thead><tr>${COLS.map(c=>`<th data-k="${c[0]}" class="${c[3]?'num':''}">${c[1]}${sortK===c[0]?(sortD>0?' ▲':' ▼'):''}</th>`).join('')}<th class="edit-only">Acciones</th></tr></thead><tbody>${a.map(u=>`<tr>${COLS.map(c=>`<td class="${c[3]?'num':''}">${c[2](u)}</td>`).join('')}<td class="edit-only"><div class="acts"><button class="b sm ok" onclick="openAttend('${esc(u.id)}')">✓ Atendida</button><button class="b sm" onclick="openUnit('${esc(u.id)}')">✎ Editar</button><button class="b sm del" onclick="askDelete('${esc(u.id)}')">🗑</button></div></td></tr>`).join('')}</tbody>`;
+  $('tDet').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(sortK===k)sortD*=-1;else{sortK=k;sortD=1;}renderDet(filtered());});
+}
+
+/* ---------- registro ---------- */
+function renderReg(){
+  const q=$('rq').value.trim().toUpperCase(), acc=EDIT?$('racc').value:'ATENCION', p=$('fPlanta').value;
+  const all=REG.filter(r=>(!acc||r.ACCION===acc)&&(!p||String(r.PLANTA).toUpperCase()===p)&&(!q||[r.ID,r.PLANTA,r.OBSERVACIONES].join(' ').toUpperCase().includes(q)))
+    .sort((a,b)=>String(b.FECHA_REGISTRO).localeCompare(String(a.FECHA_REGISTRO)));
+  const at=REG.filter(r=>r.ACCION==='ATENCION'&&(!p||String(r.PLANTA).toUpperCase()===p)), hoy=CFG.hoy||todayN();
+  const mes0=new Date(hoy.getFullYear(),hoy.getMonth(),1,12);
+  const inMes=at.filter(r=>pd(r.FECHA_ATENCION)>=mes0);
+  const onTime=at.filter(r=>r.FECHA_PROGRAMADA&&pd(r.FECHA_ATENCION)<=pd(r.FECHA_PROGRAMADA)).length;
+  $('rk').innerHTML=[
+    {l:'Atenciones registradas',v:at.length,d:'total histórico',c:'#0f766e'},
+    {l:'Este mes',v:inMes.length,d:MES[hoy.getMonth()]+' '+hoy.getFullYear(),c:'var(--accent)'},
+    {l:'Últimos 7 días',v:at.filter(r=>diff(hoy,pd(r.FECHA_ATENCION))<=7&&diff(hoy,pd(r.FECHA_ATENCION))>=0).length,d:'atenciones',c:ST.sem.h},
+    {l:'Atendidas en o antes de lo programado',v:at.length?Math.round(onTime/at.length*100)+'%':'—',d:`${onTime} de ${at.length}`,c:ST.ok.h},
+  ].map(x=>`<div class="kpi" style="--c:${x.c};cursor:default"><div class="l">${x.l}</div><div class="v">${x.v}</div><div class="d">${x.d}</div></div>`).join('');
+  $('rcount').textContent=`${all.length} registros`;
+  const accTxt={ATENCION:'Atención',ALTA:'Alta',EDICION:'Edición',BAJA:'Baja',CARGA:'Carga Excel'};
+  $('tReg').innerHTML=`<thead><tr><th>Fecha de atención</th><th>Unidad</th><th>Planta</th><th>Programada</th><th class="edit-only">Proyectada</th><th>Observaciones</th><th class="edit-only">Movimiento</th><th class="edit-only">Registrado</th></tr></thead><tbody>${
+    all.map(r=>`<tr><td><b>${f(pd(r.FECHA_ATENCION))}</b></td><td class="mono"><b>${esc(r.ID)}</b></td><td>${esc(r.PLANTA)}</td><td>${f(pd(r.FECHA_PROGRAMADA))}</td><td class="edit-only">${f(pd(r.FECHA_PROYECTADA))}</td><td style="white-space:normal">${esc(r.OBSERVACIONES)}</td><td class="edit-only">${accTxt[r.ACCION]||esc(r.ACCION)}</td><td class="edit-only" style="color:var(--muted)">${esc(r.FECHA_REGISTRO)}</td></tr>`).join('')
+    ||'<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted)">Aún no hay atenciones registradas.</td></tr>'}</tbody>`;
+}
+
+/* ---------- modo edición ---------- */
+function toggleEdit(){
+  if(EDIT){EDIT=false;PIN='';document.body.classList.remove('editing');$('bEdit').textContent='🔒 Modo edición';$('bEdit').classList.remove('edit-on');render();return;}
+  modal(`<h2>Modo edición</h2><div class="msub">Ingresa la contraseña para modificar unidades y registrar atenciones.</div>
+    <div class="mbody"><div class="fld full"><label>Contraseña</label><input type="password" id="mPin" autofocus></div><div class="err" id="mErr"></div></div>
+    <div class="mfoot"><span></span><div><button class="b" onclick="closeM()">Cancelar</button><button class="b pri" id="mGo">Entrar</button></div></div>`);
+  const go=async()=>{const v=$('mPin').value;$('mErr').textContent='';
+    if(URL_){PIN=v;try{busy('mGo',true);await api('auth');}catch(e){PIN='';busy('mGo',false);$('mErr').textContent=e.message;return;}}
+    else if(v!==LOCAL_PIN){$('mErr').textContent='Contraseña incorrecta';return;}
+    else PIN=v;
+    EDIT=true;document.body.classList.add('editing');$('bEdit').textContent='🔓 Salir de edición';$('bEdit').classList.add('edit-on');closeM();render();toast('Modo edición activo');};
+  $('mGo').onclick=go; $('mPin').onkeydown=e=>{if(e.key==='Enter')go();}; setTimeout(()=>$('mPin').focus(),50);
+}
+function modal(html){$('modal').innerHTML=html;$('ov').classList.add('on');}
+function closeM(){$('ov').classList.remove('on');}
+$('ov').addEventListener('mousedown',e=>{if(e.target.id==='ov')closeM();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM();});
+function busy(id,on){const b=$(id);if(!b)return;b.disabled=on;b.dataset.t=b.dataset.t||b.textContent;b.textContent=on?'Guardando…':b.dataset.t;}
+let tt;function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast'+(err?' err':'');t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',4200);}
+const plantOpts=sel=>{const ps=[...new Set([...BASE.map(r=>r.planta),'CAMIONES','EXTENSION','VAN','MOTORES NORTE','MOTORES SUR'])].sort();return ps.map(p=>`<option ${p===sel?'selected':''}>${esc(p)}</option>`).join('')+'<option value="__new">Otra…</option>';};
+
+function openUnit(id){
+  const r=id?BASE.find(x=>x.id===id):null, u=id?U.find(x=>x.id===id):null;
+  const intv=r&&r.kmProx!=null&&r.kmUP!=null?r.kmProx-r.kmUP:20000;
+  modal(`<h2>${r?'Editar unidad '+esc(r.id):'Agregar unidad'}</h2><div class="msub">${r?'Modifica los datos y guarda. El cambio queda en el registro de movimientos.':'Captura los datos del último servicio de la unidad.'}</div>
+   <div class="mbody">
+     <div class="fld"><label>Unidad (ID)</label><input id="fId" value="${esc(r?.id||'')}"></div>
+     <div class="fld"><label>Planta</label><select id="fPl">${plantOpts(r?.planta||'CAMIONES')}</select><input id="fPlN" placeholder="Nombre de la planta" style="display:none"></div>
+     <div class="fld"><label>Fecha penúltimo preventivo</label><input type="date" id="fPen" value="${iso(r?.pen)}"></div>
+     <div class="fld"><label>Fecha último preventivo</label><input type="date" id="fUlt" value="${iso(r?.ult)}"></div>
+     <div class="fld full"><label>Observaciones</label><textarea id="fObs">${esc(r?.obs||'')}</textarea></div>
+     <details class="int"><summary>Datos internos de kilometraje (no se muestran en el tablero)</summary><div class="mbody">
+       <div class="fld"><label>Km en último preventivo</label><input type="number" id="fKmUP" value="${r?.kmUP??''}"></div>
+       <div class="fld"><label>Intervalo de servicio (km)</label><input type="number" id="fInt" value="${intv}"></div>
+       <div class="fld"><label>Km recorridos desde el último</label><input type="number" id="fRec" value="${r?.kmRec??''}"></div>
+       <div class="fld"><label>Km recorridos al día</label><input type="date" id="fRef" value="${iso(r?.refKm||todayN())}"></div>
+       <div class="fld"><label>Uso promedio (km/día)</label><input type="number" id="fKmDia" value="${r?.kmDia??''}" placeholder="${u?Math.round(u.rate):'auto'}"><small>Vacío = se calcula solo</small></div>
+     </div></details>
+     <div class="err" id="mErr"></div>
+   </div>
+   <div class="mfoot"><span>${r?`<button class="b del" onclick="askDelete('${esc(r.id)}')">🗑 Eliminar</button>`:''}</span><div><button class="b" onclick="closeM()">Cancelar</button><button class="b pri" id="mGo">Guardar</button></div></div>`);
+  $('fPl').onchange=()=>{$('fPlN').style.display=$('fPl').value==='__new'?'':'none';};
+  $('mGo').onclick=async()=>{
+    const nid=$('fId').value.trim(); let pl=$('fPl').value==='__new'?$('fPlN').value.trim().toUpperCase():$('fPl').value;
+    const pen=pd($('fPen').value), ult=pd($('fUlt').value);
+    if(!nid){$('mErr').textContent='Captura el ID de la unidad.';return;}
+    if(!pl){$('mErr').textContent='Captura la planta.';return;}
+    if(!ult){$('mErr').textContent='Captura la fecha del último preventivo.';return;}
+    if(pen&&pen>ult){$('mErr').textContent='El penúltimo preventivo no puede ser posterior al último.';return;}
+    if(nid!==r?.id&&BASE.some(x=>x.id===nid)){$('mErr').textContent='Ya existe una unidad con ese ID.';return;}
+    const kmUP=num($('fKmUP').value), it=num($('fInt').value)||20000, rec=num($('fRec').value), ref=pd($('fRef').value)||todayN();
+    const nr={...(r||{}), id:nid, planta:pl, pen, ult, obs:$('fObs').value.trim(),
+      kmUP, kmProx:kmUP!=null?kmUP+it:it, kmRec:rec, kmFal:rec!=null?it-rec:it, refKm:rec!=null?ref:ult,
+      diasUP:rec!=null?Math.max(0,diff(ref,ult)):0, kmDia:num($('fKmDia').value)};
+    const reg={ACCION:r?'EDICION':'ALTA',ID:nid,PLANTA:pl,OBSERVACIONES:r&&nid!==r.id?`ID anterior: ${r.id}`:nr.obs};
+    busy('mGo',true);
+    try{ await api('upsert',{unidad:toRow(nr),prevId:r?.id||null,registro:reg});
+      if(r) Object.assign(r,nr); else BASE.push(nr);
+      REG.push({...reg,FECHA_REGISTRO:stamp()}); closeM(); initFilters(); compute(); toast(r?'Unidad actualizada':'Unidad agregada');
+    }catch(e){busy('mGo',false);$('mErr').textContent=e.message;}
+  };
+}
+function openAttend(id){
+  const r=BASE.find(x=>x.id===id), u=U.find(x=>x.id===id); if(!r)return;
+  modal(`<h2>Registrar atención · Unidad ${esc(id)}</h2><div class="msub">${esc(r.planta)} · programada ${u?.prog?f(u.prog):'—'} · último preventivo ${f(r.ult)}</div>
+   <div class="mbody">
+     <div class="fld"><label>Fecha de atención</label><input type="date" id="aF" value="${iso(todayN())}"></div>
+     <div class="fld"><label>Km del odómetro</label><input type="number" id="aKm" placeholder="opcional"><small>Dato interno, no se muestra</small></div>
+     <div class="fld full"><label>Observaciones</label><textarea id="aObs" placeholder="Trabajos realizados, taller, etc."></textarea></div>
+     <div class="err" id="mErr"></div>
+   </div>
+   <div class="mfoot"><span style="font-size:12px;color:var(--muted);align-self:center">El último preventivo pasa a ser el penúltimo.</span><div><button class="b" onclick="closeM()">Cancelar</button><button class="b ok" id="mGo">✓ Registrar</button></div></div>`);
+  $('mGo').onclick=async()=>{
+    const fa=pd($('aF').value); if(!fa){$('mErr').textContent='Captura la fecha.';return;}
+    if(r.ult&&fa<r.ult){$('mErr').textContent='La fecha es anterior al último preventivo registrado.';return;}
+    const it=(r.kmProx!=null&&r.kmUP!=null)?r.kmProx-r.kmUP:20000;
+    let km=num($('aKm').value);
+    if(km==null&&r.kmUP!=null&&u){ km=Math.round(r.kmUP+(r.kmRec||0)+u.rate*Math.max(0,diff(fa,r.refKm||r.ult))); }
+    const nr={...r, pen:r.ult, ult:fa, kmUP:km, kmProx:km!=null?km+it:it, kmRec:0, kmFal:it, diasUP:0, refKm:fa, kmDia:Math.round(u?.rate||r.kmDia||0)||null, obs:$('aObs').value.trim()||r.obs};
+    const reg={ACCION:'ATENCION',ID:r.id,PLANTA:r.planta,FECHA_ATENCION:iso(fa),FECHA_PROGRAMADA:iso(u?.prog),FECHA_PROYECTADA:iso(u?.proy),OBSERVACIONES:$('aObs').value.trim()};
+    busy('mGo',true);
+    try{ await api('upsert',{unidad:toRow(nr),prevId:r.id,registro:reg});
+      Object.assign(r,nr); REG.push({...reg,FECHA_REGISTRO:stamp()}); closeM(); compute(); toast(`Unidad ${r.id} registrada como atendida`);
+    }catch(e){busy('mGo',false);$('mErr').textContent=e.message;}
+  };
+}
+function askDelete(id){
+  const r=BASE.find(x=>x.id===id); if(!r)return;
+  modal(`<h2>Eliminar unidad ${esc(id)}</h2><div class="msub">La unidad se quitará del tablero y del Sheet. Su historial en el registro se conserva.</div>
+   <div class="mbody"><div class="fld full"><label>Motivo (opcional)</label><input id="dM" placeholder="Baja de flota, cambio de planta…"></div><div class="err" id="mErr"></div></div>
+   <div class="mfoot"><span></span><div><button class="b" onclick="closeM()">Cancelar</button><button class="b del" id="mGo" style="background:#b4232f;color:#fff">Eliminar</button></div></div>`);
+  $('mGo').onclick=async()=>{
+    const reg={ACCION:'BAJA',ID:r.id,PLANTA:r.planta,OBSERVACIONES:$('dM').value.trim()};
+    busy('mGo',true);
+    try{ await api('delete',{id:r.id,registro:reg}); BASE=BASE.filter(x=>x!==r); REG.push({...reg,FECHA_REGISTRO:stamp()}); closeM(); initFilters(); compute(); toast(`Unidad ${id} eliminada`);
+    }catch(e){busy('mGo',false);$('mErr').textContent=e.message;}
+  };
+}
+function openConn(){
+  modal(`<h2>Conexión con Google Sheet</h2><div class="msub">Pega la URL de la aplicación web de Apps Script (termina en <b>/exec</b>).</div>
+   <div class="mbody"><div class="fld full"><label>URL de Apps Script</label><input id="cU" value="${esc(URL_)}" placeholder="https://script.google.com/macros/s/…/exec"><small>Se guarda en este navegador. Para que todos los que abran el tablero vean el Sheet, pégala también en SCRIPT_URL dentro del archivo HTML.</small></div>
+   <div class="fld full"><label>Subir unidades actuales al Sheet</label><button class="b" id="cUp" style="align-self:flex-start">⬆ Subir ${BASE.length} unidades (agrega o actualiza por ID)</button><small>Úsalo la primera vez para llenar el Sheet con los datos de este tablero.</small></div>
+   <div class="err" id="mErr"></div></div>
+   <div class="mfoot"><span></span><div><button class="b" onclick="closeM()">Cerrar</button><button class="b pri" id="mGo">Guardar y reconectar</button></div></div>`);
+  $('mGo').onclick=async()=>{URL_=$('cU').value.trim();try{localStorage.setItem('prev_ste_url',URL_);}catch(e){}
+    if(URL_){busy('mGo',true);try{await api('auth');}catch(e){busy('mGo',false);$('mErr').textContent='No se pudo validar: '+e.message;return;}}
+    closeM(); await init();};
+  $('cUp').onclick=async()=>{const u=$('cU').value.trim(); if(!u){$('mErr').textContent='Primero pega la URL.';return;} URL_=u;
+    try{localStorage.setItem('prev_ste_url',URL_);}catch(e){}
+    busy('cUp',true);try{await bulk(BASE,'Carga inicial'); closeM(); await init(); toast('Unidades subidas al Sheet');}catch(e){busy('cUp',false);$('mErr').textContent=e.message;}};
+}
+async function bulk(list,note){
+  for(let i=0;i<list.length;i+=60){ await api('bulkUpsert',{unidades:list.slice(i,i+60).map(r=>toRow(r,true)), registro:i===0?{ACCION:'CARGA',ID:'—',PLANTA:'',OBSERVACIONES:`${note}: ${list.length} unidades`}:null}); }
+}
+const stamp=()=>{const d=new Date();return `${iso(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
+
+/* ---------- export ---------- */
+function exportCSV(){
+  const h=['Unidad','Planta','Penultimo preventivo','Ultimo preventivo','Dias entre preventivos','Proximo preventivo','Estatus','Fecha programada de atencion','Observaciones'];
+  const rows=[...filtered()].sort((a,b)=>a.prog-b.prog).map(u=>[u.id,u.planta,iso(u.pen),iso(u.ult),u.ivOk?u.interval:'',iso(u.proy),ST[u.st].n,iso(u.prog),u.obs||'']);
+  const csv='﻿'+[h,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`plan_preventivos_${iso(CFG.hoy)}.csv`;a.click();
+}
+
+/* ---------- eventos ---------- */
+function goTab(p){document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));document.querySelectorAll('.pane').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>goTab(b.dataset.p));
+['hoy','cap','lead','sab'].forEach(id=>$(id).addEventListener('change',compute));
+['fPlanta','fEst','hor'].forEach(id=>$(id).addEventListener('change',render));
+document.querySelectorAll('input[name=gg]').forEach(r=>r.onchange=()=>renderGantt(filtered()));
+$('gq').oninput=()=>renderGantt(filtered());
+$('q').oninput=()=>renderDet(filtered());
+$('rq').oninput=renderReg; $('racc').onchange=renderReg;
+$('file').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();
+  rd.onload=async ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+    let rows=[];for(const n of wb.SheetNames){const r=XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:null,raw:true});if(r.length&&Object.keys(r[0]).some(k=>normKey(k).includes('ULTIMOPREVENTIVO'))){rows=r;break;}}
+    if(!rows.length){toast('No encontré la columna "FECHA ULTIMO PREVENTIVO" en el archivo.',true);return;}
+    const list=rows.map(fromRow).filter(r=>r.id); list.forEach(r=>{if(!r.refKm&&r.ult&&r.diasUP!=null)r.refKm=add(r.ult,r.diasUP);});
+    modal(`<h2>Cargar Excel</h2><div class="msub">${list.length} unidades encontradas en <b>${esc(fl.name)}</b>.</div>
+      <div class="mbody"><div class="fld full" style="font-size:13px;line-height:1.5">Las unidades que ya existen se <b>actualizan</b> con los datos del Excel y las nuevas se <b>agregan</b>. Las unidades que no vienen en el archivo se conservan.${URL_?'':'<br><b>Sin conexión al Sheet:</b> el cambio solo se verá en pantalla.'}</div><div class="err" id="mErr"></div></div>
+      <div class="mfoot"><span></span><div><button class="b" onclick="closeM()">Cancelar</button><button class="b pri" id="mGo">Cargar</button></div></div>`);
+    $('mGo').onclick=async()=>{busy('mGo',true);try{ if(URL_) await bulk(list,'Carga de Excel '+fl.name);
+        list.forEach(n=>{const o=BASE.find(x=>x.id===n.id); if(o){ const keepObs=o.obs; Object.assign(o,n); if(!n.obs)o.obs=keepObs; } else BASE.push(n);});
+        if(!URL_) REG.push({ACCION:'CARGA',ID:'—',PLANTA:'',OBSERVACIONES:`Carga de Excel ${fl.name}: ${list.length} unidades`,FECHA_REGISTRO:stamp()});
+        closeM(); if(URL_) await init(); else {initFilters();compute();} toast('Excel cargado');
+      }catch(err){busy('mGo',false);$('mErr').textContent=err.message;}};
+  }catch(err){toast('No se pudo leer el archivo: '+err.message,true);}};
+  rd.readAsArrayBuffer(fl);e.target.value='';};
+
+init();
+</script>
+</body>
+</html>
